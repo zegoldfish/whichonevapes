@@ -70,5 +70,20 @@ export async function fetchWikipediaData(
 export async function fetchWikipediaDataBatch(
   pageIds: string[]
 ): Promise<WikipediaResult[]> {
-  return Promise.all(pageIds.map((pageId) => fetchWikipediaData(pageId)));
+  const results = await Promise.allSettled(
+    pageIds.map((pageId) => fetchWikipediaData(pageId))
+  );
+
+  return results.map((result, index) => {
+    if (result.status === "fulfilled") {
+      return result.value;
+    }
+
+    console.error(
+      `Error fetching Wikipedia data for page ID ${pageIds[index]}:`,
+      result.reason
+    );
+
+    return { title: "", bio: null, image: null };
+  });
 }
