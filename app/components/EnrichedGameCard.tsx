@@ -308,16 +308,17 @@ export function EnrichedGameCard({
       
       <Button
         variant="contained"
-        size="large"
         onClick={onVote}
         disabled={isVoting}
         sx={{
           mt: 3,
-          py: 1.5,
-          px: 2,
-          fontSize: "0.9rem",
+          py: 1.2,
+          px: 2.5,
+          fontSize: "0.875rem",
           fontWeight: 700,
           borderRadius: 3,
+          alignSelf: "center",
+          width: "fit-content",
           background: "linear-gradient(135deg, #7B2CBF 0%, #C71585 100%)",
           boxShadow: "0 8px 20px rgba(123, 44, 191, 0.4)",
           transition: "all 0.3s ease",
