@@ -53,7 +53,7 @@ export function EnrichedGameCard({
 
   // Fetch Wikipedia image automatically on mount if not already available
   useEffect(() => {
-    if (!celebrity.image && !wikiData?.image && celebrity.wikipediaPageId) {
+    if (!celebrity.image && !wikiData?.image && celebrity.wikipediaPageId && !loadingImage) {
       setLoadingImage(true);
       getCelebrityWikipediaData(celebrity.wikipediaPageId)
         .then((data) => {
@@ -66,8 +66,8 @@ export function EnrichedGameCard({
           setLoadingImage(false);
         });
     }
-    // Run this effect when the celebrity input or relevant wiki data changes
-  }, [celebrity.id, celebrity.image, celebrity.wikipediaPageId, wikiData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [celebrity.id, celebrity.image, celebrity.wikipediaPageId]);
 
   useEffect(() => {
     if (readOnly) {
@@ -96,7 +96,7 @@ export function EnrichedGameCard({
           });
       }
     }
-  }, [celebrity.bio, celebrity.wikipediaPageId, loadingBio, readOnly, wikiData?.bio]);
+  }, [celebrity.bio, celebrity.wikipediaPageId, readOnly]);
 
   // Fetch bio only when card is expanded
   const handleCardClick = async () => {
