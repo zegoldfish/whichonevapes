@@ -110,13 +110,21 @@ export async function voteBetweenCelebrities(params: {
 
 // Fetch all celebrities
 export async function getAllCelebrities(): Promise<Celebrity[]> {
-  const scan = await ddb.send(
-    new ScanCommand({
-      TableName: CELEBRITIES_TABLE_NAME,
-    })
-  );
+  const items: Celebrity[] = [];
+  let lastEvaluatedKey: Record<string, unknown> | undefined;
 
-  const items = (scan.Items || []) as Celebrity[];
+  do {
+    const page = await ddb.send(
+      new ScanCommand({
+        TableName: CELEBRITIES_TABLE_NAME,
+        ExclusiveStartKey: lastEvaluatedKey,
+      })
+    );
+
+    items.push(...((page.Items || []) as Celebrity[]));
+    lastEvaluatedKey = page.LastEvaluatedKey as Record<string, unknown> | undefined;
+  } while (lastEvaluatedKey);
+
   // Sort by ELO descending
   return items.sort((a, b) => (b.elo ?? 1000) - (a.elo ?? 1000));
 }
