@@ -23,10 +23,11 @@ interface CachedWikipediaData {
 }
 
 /**
- * Generate a consistent S3 key for an image URL
+ * Generate a consistent S3 key for an image URL.
+ * Uses a non-security-critical hash purely for stable naming/deduplication.
  */
 function generateImageKey(imageUrl: string, pageId: string): string {
-  const hash = crypto.createHash("md5").update(imageUrl).digest("hex");
+  const hash = crypto.createHash("sha256").update(imageUrl).digest("hex");
   const ext = imageUrl.split(".").pop()?.split("?")[0] || "jpg";
   return `wikipedia/${pageId}/${hash}.${ext}`;
 }
