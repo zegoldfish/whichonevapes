@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import {
   Card,
   CardContent,
-  CardMedia,
   Button,
   Box,
   CircularProgress,
@@ -96,15 +96,47 @@ export function EnrichedGameCard({
   const displayBio = celebrity.bio || wikiData?.bio;
 
   return (
-    <Box sx={{ textAlign: "center" }}>
+    <Box
+      sx={{
+        textAlign: "center",
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+      }}
+    >
       <Card
         sx={{
-          maxWidth: 300,
+          maxWidth: 400,
           margin: "0 auto",
           cursor: "pointer",
-          transition: "transform 0.2s",
+          transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+          background: "rgba(255, 255, 255, 0.03)",
+          backdropFilter: "blur(10px)",
+          border: "1px solid rgba(255, 255, 255, 0.1)",
+          borderRadius: 3,
+          overflow: "hidden",
+          position: "relative",
+          "&::before": {
+            content: '""',
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "linear-gradient(135deg, rgba(123, 44, 191, 0.1) 0%, rgba(199, 21, 133, 0.1) 100%)",
+            opacity: 0,
+            transition: "opacity 0.4s ease",
+            pointerEvents: "none",
+            zIndex: 0,
+          },
           "&:hover": {
-            transform: "scale(1.05)",
+            transform: "translateY(-8px) scale(1.02)",
+            boxShadow: "0 20px 40px rgba(123, 44, 191, 0.3), 0 0 40px rgba(199, 21, 133, 0.2)",
+            border: "1px solid rgba(123, 44, 191, 0.4)",
+            "&::before": {
+              opacity: 1,
+            },
           },
         }}
         onClick={handleCardClick}
@@ -112,19 +144,58 @@ export function EnrichedGameCard({
         role="button"
       >
         {loadingImage && !displayImage ? (
-          <Skeleton variant="rectangular" height={300} />
-        ) : displayImage ? (
-          <CardMedia
-            component="img"
-            height="300"
-            image={displayImage}
-            alt={celebrity.name}
-            sx={{ objectFit: "cover" }}
+          <Skeleton 
+            variant="rectangular" 
+            height={400} 
+            sx={{ 
+              bgcolor: "rgba(255, 255, 255, 0.05)",
+            }} 
           />
+        ) : displayImage ? (
+          <Box sx={{ position: "relative", overflow: "hidden", width: "100%" }}>
+            <Image
+              src={displayImage}
+              alt={celebrity.name}
+              width={400}
+              height={400}
+              style={{
+                objectFit: "cover",
+                width: "100%",
+                height: "auto",
+                minHeight: "400px",
+                maxHeight: "400px",
+              }}
+              priority={position === "left"}
+            />
+            <Box
+              sx={{
+                position: "absolute",
+                bottom: 0,
+                left: 0,
+                right: 0,
+                height: "100px",
+                background: "linear-gradient(to top, rgba(10, 17, 40, 0.95), transparent)",
+                pointerEvents: "none",
+                zIndex: 1,
+              }}
+            />
+          </Box>
         ) : null}
         
-        <CardContent>
-          <Typography variant="h5" component="div">
+        <CardContent sx={{ position: "relative", zIndex: 1, p: 3 }}>
+          <Typography 
+            variant="h5" 
+            component="div"
+            sx={{
+              fontWeight: 700,
+              mb: 2,
+              fontSize: "1.5rem",
+              background: "linear-gradient(135deg, #F8F9FA 0%, #C71585 100%)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              backgroundClip: "text",
+            }}
+          >
             {celebrity.name}
           </Typography>
           
@@ -132,19 +203,38 @@ export function EnrichedGameCard({
             <>
               {loadingBio && !displayBio ? (
                 <Box sx={{ mt: 2 }}>
-                  <Skeleton />
-                  <Skeleton />
-                  <Skeleton />
+                  <Skeleton sx={{ bgcolor: "rgba(255, 255, 255, 0.05)" }} />
+                  <Skeleton sx={{ bgcolor: "rgba(255, 255, 255, 0.05)" }} />
+                  <Skeleton sx={{ bgcolor: "rgba(255, 255, 255, 0.05)" }} />
                 </Box>
               ) : displayBio ? (
                 <Typography
                   variant="body2"
-                  color="text.secondary"
                   sx={{
                     mt: 2,
                     textAlign: "left",
                     maxHeight: "200px",
                     overflow: "auto",
+                    color: "rgba(248, 249, 250, 0.8)",
+                    lineHeight: 1.6,
+                    p: 2,
+                    background: "rgba(0, 0, 0, 0.2)",
+                    borderRadius: 2,
+                    border: "1px solid rgba(255, 255, 255, 0.05)",
+                    "&::-webkit-scrollbar": {
+                      width: "6px",
+                    },
+                    "&::-webkit-scrollbar-track": {
+                      background: "rgba(0, 0, 0, 0.2)",
+                      borderRadius: "10px",
+                    },
+                    "&::-webkit-scrollbar-thumb": {
+                      background: "rgba(123, 44, 191, 0.5)",
+                      borderRadius: "10px",
+                      "&:hover": {
+                        background: "rgba(123, 44, 191, 0.7)",
+                      },
+                    },
                   }}
                 >
                   {displayBio}
@@ -161,21 +251,94 @@ export function EnrichedGameCard({
             </>
           )}
           
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            Score: {celebrity.elo ?? 1000}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Matches: {celebrity.matches ?? 0}
-          </Typography>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-around",
+              mt: 3,
+              pt: 2,
+              borderTop: "1px solid rgba(255, 255, 255, 0.1)",
+            }}
+          >
+            <Box sx={{ textAlign: "center" }}>
+              <Typography 
+                variant="caption" 
+                sx={{ 
+                  color: "rgba(248, 249, 250, 0.5)",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.1em",
+                  fontSize: "0.7rem",
+                }}
+              >
+                Score
+              </Typography>
+              <Typography 
+                variant="h6" 
+                sx={{ 
+                  fontWeight: 700,
+                  color: "var(--primary)",
+                }}
+              >
+                {celebrity.elo ?? 1000}
+              </Typography>
+            </Box>
+            <Box sx={{ textAlign: "center" }}>
+              <Typography 
+                variant="caption" 
+                sx={{ 
+                  color: "rgba(248, 249, 250, 0.5)",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.1em",
+                  fontSize: "0.7rem",
+                }}
+              >
+                Matches
+              </Typography>
+              <Typography 
+                variant="h6" 
+                sx={{ 
+                  fontWeight: 700,
+                  color: "var(--secondary)",
+                }}
+              >
+                {celebrity.matches ?? 0}
+              </Typography>
+            </Box>
+          </Box>
         </CardContent>
       </Card>
       
       <Button
         variant="contained"
-        size="large"
         onClick={onVote}
         disabled={isVoting}
-        sx={{ mt: 2, minWidth: 150 }}
+        sx={{
+          mt: 3,
+          py: 1.2,
+          px: 2.5,
+          fontSize: "0.875rem",
+          fontWeight: 700,
+          borderRadius: 3,
+          alignSelf: "center",
+          width: "fit-content",
+          background: "linear-gradient(135deg, #7B2CBF 0%, #C71585 100%)",
+          boxShadow: "0 8px 20px rgba(123, 44, 191, 0.4)",
+          transition: "all 0.3s ease",
+          textTransform: "none",
+          letterSpacing: "0.05em",
+          "&:hover": {
+            background: "linear-gradient(135deg, #9333EA 0%, #E91E8C 100%)",
+            transform: "translateY(-2px)",
+            boxShadow: "0 12px 30px rgba(199, 21, 133, 0.6)",
+          },
+          "&:active": {
+            transform: "translateY(0px)",
+          },
+          "&:disabled": {
+            background: "rgba(123, 44, 191, 0.3)",
+            color: "rgba(248, 249, 250, 0.5)",
+          },
+        }}
       >
         {isVoting ? (
           <CircularProgress size={24} color="inherit" />
