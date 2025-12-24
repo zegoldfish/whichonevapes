@@ -17,6 +17,8 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [voting, setVoting] = useState(false);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
 
   // Fetch random pair
   const fetchPair = async () => {
@@ -39,6 +41,27 @@ export default function Home() {
     fetchPair();
   }, []);
 
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (!pair || voting || loading) return;
+      
+      if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        handleVote("A");
+      } else if (e.key === "ArrowRight") {
+        e.preventDefault();
+        handleVote("B");
+      } else if (e.key === " ") {
+        e.preventDefault();
+        fetchPair();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyPress);
+    return () => window.removeEventListener("keydown", handleKeyPress);
+  }, [pair, voting, loading]);
+
   const handleVote = async (winner: "A" | "B") => {
     if (!pair) return;
     setVoting(true);
@@ -54,6 +77,32 @@ export default function Home() {
       setError(err instanceof Error ? err.message : "Failed to record vote");
     } finally {
       setVoting(false);
+    }
+  };
+
+  // Swipe gesture handlers
+  const minSwipeDistance = 50;
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd || voting || !pair) return;
+    
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+    
+    if (isLeftSwipe) {
+      handleVote("B"); // Swipe left votes for right card
+    } else if (isRightSwipe) {
+      handleVote("A"); // Swipe right votes for left card
     }
   };
 
@@ -125,6 +174,23 @@ export default function Home() {
           </Button>
         </Box>
 
+        <Box
+          sx={{
+            textAlign: "center",
+            mb: 3,
+            opacity: 0.6,
+            fontSize: "0.85rem",
+            color: "rgba(248, 249, 250, 0.7)",
+          }}
+        >
+          <Typography variant="caption" sx={{ display: { xs: "none", md: "block" } }}>
+            Use ← → arrow keys to vote • Space for new pair
+          </Typography>
+          <Typography variant="caption" sx={{ display: { xs: "block", md: "none" } }}>
+            Swipe left or right to vote
+          </Typography>
+        </Box>
+
         {error && (
           <Alert severity="error" sx={{ mb: 4 }}>
             {error}
@@ -141,6 +207,9 @@ export default function Home() {
             spacing={{ xs: 3, md: 6 }}
             justifyContent="center"
             alignItems="stretch"
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
             sx={{
               minHeight: "60vh",
               animation: "slideUp 0.6s ease-out",
