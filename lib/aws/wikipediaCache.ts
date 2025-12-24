@@ -1,6 +1,6 @@
 import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 import { ddb } from "./dynamodb";
-import { GetCommand, PutCommand } from "@aws-sdk/lib-dynamodb";
+import { GetCommand, PutCommand, BatchGetCommand } from "@aws-sdk/lib-dynamodb";
 import crypto from "crypto";
 
 const REGION = process.env.AWS_REGION || "us-east-1";
@@ -180,15 +180,17 @@ export async function batchGetCachedWikipediaData(
     const batch = pageIds.slice(i, i + BATCH_SIZE);
 
     try {
-      const { Responses } = await ddb.send({
-        RequestItems: {
-          [WIKIPEDIA_CACHE_TABLE]: {
-            Keys: batch.map((pageId) => ({ pageId })),
+      const response = await ddb.send(
+        new BatchGetCommand({
+          RequestItems: {
+            [WIKIPEDIA_CACHE_TABLE]: {
+              Keys: batch.map((pageId) => ({ pageId })),
+            },
           },
-        },
-      } as any);
+        })
+      );
 
-      const items = (Responses?.[WIKIPEDIA_CACHE_TABLE] || []) as CachedWikipediaData[];
+      const items = (response.Responses?.[WIKIPEDIA_CACHE_TABLE] || []) as CachedWikipediaData[];
 
       for (const item of items) {
         // Only include non-expired items
