@@ -152,14 +152,18 @@ export function EnrichedGameCard({
             }} 
           />
         ) : displayImage ? (
-          <Box sx={{ position: "relative", overflow: "hidden", width: "100%", height: 400 }}>
+          <Box sx={{ position: "relative", overflow: "hidden", width: "100%" }}>
             <Image
               src={displayImage}
               alt={celebrity.name}
-              fill
-              sizes="(max-width: 768px) 100vw, 400px"
+              width={400}
+              height={400}
               style={{
                 objectFit: "cover",
+                width: "100%",
+                height: "auto",
+                minHeight: "400px",
+                maxHeight: "400px",
               }}
               priority={position === "left"}
             />
