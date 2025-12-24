@@ -65,7 +65,14 @@ export function EnrichedGameCard({
 
   // Fetch bio only when card is expanded
   const handleCardClick = async () => {
-    if (!expanded && !celebrity.bio && !wikiData?.bio && !loadingBio && celebrity.wikipediaPageId) {
+    if (
+      !expanded &&
+      !celebrity.bio &&
+      !wikiData?.bio &&
+      !loadingBio &&
+      !loadingImage &&
+      celebrity.wikipediaPageId
+    ) {
       setLoadingBio(true);
       setError(null);
       try {
