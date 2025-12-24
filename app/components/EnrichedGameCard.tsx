@@ -158,6 +158,7 @@ export function EnrichedGameCard({
               alt={celebrity.name}
               width={400}
               height={400}
+              unoptimized
               style={{
                 objectFit: "cover",
                 width: "100%",
