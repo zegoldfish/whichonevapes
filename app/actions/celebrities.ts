@@ -129,28 +129,43 @@ export async function getAllCelebrities(): Promise<Celebrity[]> {
   return items.sort((a, b) => (b.elo ?? 1000) - (a.elo ?? 1000));
 }
 
+// Simple in-memory cache for celebrity list (refreshed periodically)
+let cachedCelebrities: Celebrity[] = [];
+let lastCacheUpdate = 0;
+const CACHE_TTL_MS = 300_000; // 5 minutes
+
+async function getCachedCelebrities(): Promise<Celebrity[]> {
+  const now = Date.now();
+  
+  if (cachedCelebrities.length === 0 || now - lastCacheUpdate > CACHE_TTL_MS) {
+    const items: Celebrity[] = [];
+    let lastEvaluatedKey: Record<string, unknown> | undefined;
+
+    do {
+      const scan = await ddb.send(
+        new ScanCommand({
+          TableName: CELEBRITIES_TABLE_NAME,
+          ExclusiveStartKey: lastEvaluatedKey,
+        })
+      );
+
+      items.push(...((scan.Items || []) as Celebrity[]));
+      lastEvaluatedKey = scan.LastEvaluatedKey as Record<string, unknown> | undefined;
+    } while (lastEvaluatedKey);
+
+    cachedCelebrities = items;
+    lastCacheUpdate = now;
+  }
+
+  return cachedCelebrities;
+}
+
 // Fetch a random pair of celebrities
 export async function getRandomCelebrityPair(): Promise<{
   a: Celebrity;
   b: Celebrity;
 }> {
-  // Collect items with pagination up to a reasonable limit for random selection
-  const items: Celebrity[] = [];
-  let lastEvaluatedKey: Record<string, unknown> | undefined;
-  const maxItems = 500; // Sample from up to 500 items for better randomness
-
-  do {
-    const scan = await ddb.send(
-      new ScanCommand({
-        TableName: CELEBRITIES_TABLE_NAME,
-        Limit: 100,
-        ExclusiveStartKey: lastEvaluatedKey,
-      })
-    );
-
-    items.push(...((scan.Items || []) as Celebrity[]));
-    lastEvaluatedKey = scan.LastEvaluatedKey as Record<string, unknown> | undefined;
-  } while (lastEvaluatedKey && items.length < maxItems);
+  const items = await getCachedCelebrities();
 
   if (items.length < 2) {
     throw new Error("Not enough celebrities in database");
