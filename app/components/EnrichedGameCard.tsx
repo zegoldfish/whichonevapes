@@ -53,7 +53,7 @@ export function EnrichedGameCard({
 
   // Fetch Wikipedia image automatically on mount if not already available
   useEffect(() => {
-    if (!celebrity.image && !wikiData?.image && celebrity.wikipediaPageId && !loadingImage) {
+    if (!celebrity.image && celebrity.wikipediaPageId && !loadingImage && !wikiData) {
       setLoadingImage(true);
       getCelebrityWikipediaData(celebrity.wikipediaPageId)
         .then((data) => {
