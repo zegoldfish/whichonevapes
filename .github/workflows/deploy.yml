@@ -17,7 +17,6 @@ permissions:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -57,30 +56,36 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/ec2_key
           chmod 600 ~/.ssh/ec2_key
-          trap 'rm -f ~/.ssh/ec2_key' EXIT
           ssh-keyscan -H $EC2_HOST >> ~/.ssh/known_hosts
-          
-          # Deploy on EC2
-          ssh -i ~/.ssh/ec2_key $EC2_USER@$EC2_HOST << 'ENDSSH'
-            # Free up disk space
-            docker system prune -af
-            
-            # Login to Docker Hub
-            echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
 
-            # Pull image for this commit
-            docker pull ${{ env.DOCKER_REPOSITORY }}:${{ env.IMAGE_TAG }}
+          # Prepare variables for remote session (expanded here in runner)
+          DOCKER_REPO="${{ env.DOCKER_REPOSITORY }}"
+          IMAGE_TAG_VAL="${IMAGE_TAG}"
+          DH_USER="$DOCKERHUB_USERNAME"
+          DH_TOKEN="$DOCKERHUB_TOKEN"
+          REGION="${{ env.AWS_REGION }}"
+
+          # Deploy on EC2
+          ssh -i ~/.ssh/ec2_key $EC2_USER@$EC2_HOST << EOF2
+            set -e
+            docker system prune -af
+
+            echo "$DH_TOKEN" | docker login -u "$DH_USER" --password-stdin
+
+            docker pull "$DOCKER_REPO:$IMAGE_TAG_VAL"
             
-            # Stop old container
             docker stop whichonevapes 2>/dev/null || true
             docker rm whichonevapes 2>/dev/null || true
 
-            # Run new container with env vars
             docker run -d \
               -p 3000:3000 \
               --name whichonevapes \
               --restart unless-stopped \
               -e HOSTNAME="0.0.0.0" \
-              -e AWS_REGION="${{ env.AWS_REGION }}" \
-              ${{ env.DOCKER_REPOSITORY }}:${{ env.IMAGE_TAG }}
-          ENDSSH
+              -e AWS_REGION="$REGION" \
+              "$DOCKER_REPO:$IMAGE_TAG_VAL"
+          EOF2
+
+          # Cleanup SSH artifacts
+          shred -u ~/.ssh/ec2_key
+          rm -f ~/.ssh/known_hosts
