@@ -19,6 +19,7 @@ interface EnrichedGameCardProps {
   onVote: () => void;
   isVoting: boolean;
   position: "left" | "right";
+  voteState?: "winner" | "loser" | null;
 }
 
 export function EnrichedGameCard({
@@ -26,6 +27,7 @@ export function EnrichedGameCard({
   onVote,
   isVoting,
   position,
+  voteState = null,
 }: EnrichedGameCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [wikiData, setWikiData] = useState<{
@@ -110,13 +112,26 @@ export function EnrichedGameCard({
           maxWidth: 400,
           margin: "0 auto",
           cursor: "pointer",
-          transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+          transition: "all 0.25s ease",
           background: "rgba(255, 255, 255, 0.03)",
           backdropFilter: "blur(10px)",
           border: "1px solid rgba(255, 255, 255, 0.1)",
           borderRadius: 3,
           overflow: "hidden",
           position: "relative",
+          boxShadow:
+            voteState === "winner"
+              ? "0 0 0 2px rgba(76, 175, 80, 0.7), 0 16px 40px rgba(76, 175, 80, 0.25)"
+              : voteState === "loser"
+              ? "inset 0 0 120px rgba(0,0,0,0.35)"
+              : "0 0 0 rgba(0,0,0,0)",
+          transform:
+            voteState === "winner"
+              ? "translateY(-6px) scale(1.02)"
+              : voteState === "loser"
+              ? "translateY(0) scale(0.98)"
+              : undefined,
+          opacity: voteState === "loser" ? 0.7 : 1,
           "&::before": {
             content: '""',
             position: "absolute",

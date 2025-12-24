@@ -18,6 +18,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [voting, setVoting] = useState(false);
+  const [voteFeedback, setVoteFeedback] = useState<"A" | "B" | null>(null);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
 
@@ -115,6 +116,7 @@ export default function Home() {
       await fetchPair();
     } finally {
       setVoting(false);
+      setVoteFeedback(null);
     }
   };
 
@@ -210,6 +212,24 @@ export default function Home() {
           >
             New Pair
           </Button>
+          <Button
+            variant="text"
+            onClick={fetchPair}
+            sx={{
+              color: "rgba(248, 249, 250, 0.9)",
+              textTransform: "none",
+              borderRadius: 2,
+              px: 2,
+              py: 1,
+              transition: "all 0.3s ease",
+              "&:hover": {
+                transform: "translateY(-2px)",
+                color: "var(--accent)",
+              },
+            }}
+          >
+            Skip
+          </Button>
         </Box>
 
         <Box
@@ -264,6 +284,7 @@ export default function Home() {
                 onVote={() => handleVote("A")}
                 isVoting={voting}
                 position="left"
+                voteState={voteFeedback === "A" ? "winner" : voteFeedback === "B" ? "loser" : null}
               />
             </Grid>
             <Grid size={{ xs: 12, md: 6 }}>
@@ -273,6 +294,7 @@ export default function Home() {
                 onVote={() => handleVote("B")}
                 isVoting={voting}
                 position="right"
+                voteState={voteFeedback === "B" ? "winner" : voteFeedback === "A" ? "loser" : null}
               />
             </Grid>
           </Grid>
