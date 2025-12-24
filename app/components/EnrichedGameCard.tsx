@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import {
   Card,
   CardContent,
-  CardMedia,
   Button,
   Box,
   CircularProgress,
@@ -152,19 +152,16 @@ export function EnrichedGameCard({
             }} 
           />
         ) : displayImage ? (
-          <Box sx={{ position: "relative", overflow: "hidden" }}>
-            <CardMedia
-              component="img"
-              height="400"
-              image={displayImage}
+          <Box sx={{ position: "relative", overflow: "hidden", width: "100%", height: 400 }}>
+            <Image
+              src={displayImage}
               alt={celebrity.name}
-              sx={{
+              fill
+              sizes="(max-width: 768px) 100vw, 400px"
+              style={{
                 objectFit: "cover",
-                transition: "transform 0.4s ease",
-                "&:hover": {
-                  transform: "scale(1.1)",
-                },
               }}
+              priority={position === "left"}
             />
             <Box
               sx={{
@@ -175,6 +172,7 @@ export function EnrichedGameCard({
                 height: "100px",
                 background: "linear-gradient(to top, rgba(10, 17, 40, 0.95), transparent)",
                 pointerEvents: "none",
+                zIndex: 1,
               }}
             />
           </Box>
