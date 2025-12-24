@@ -19,6 +19,8 @@ interface EnrichedGameCardProps {
   onVote: () => void;
   isVoting: boolean;
   position: "left" | "right";
+  voteState?: "winner" | "loser" | null;
+  readOnly?: boolean;
 }
 
 export function EnrichedGameCard({
@@ -26,6 +28,8 @@ export function EnrichedGameCard({
   onVote,
   isVoting,
   position,
+  voteState = null,
+  readOnly = false,
 }: EnrichedGameCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [wikiData, setWikiData] = useState<{
@@ -45,6 +49,8 @@ export function EnrichedGameCard({
     setLoadingBio(false);
   }, [celebrity.id]);
 
+  const confirmed = Boolean((celebrity as any).confirmedVaper);
+
   // Fetch Wikipedia image automatically on mount if not already available
   useEffect(() => {
     if (!celebrity.image && !wikiData?.image && celebrity.wikipediaPageId) {
@@ -63,8 +69,38 @@ export function EnrichedGameCard({
     // Run this effect when the celebrity input or relevant wiki data changes
   }, [celebrity.id, celebrity.image, celebrity.wikipediaPageId, wikiData]);
 
+  useEffect(() => {
+    if (readOnly) {
+      setExpanded(true);
+      if (
+        !celebrity.bio &&
+        !wikiData?.bio &&
+        !loadingBio &&
+        celebrity.wikipediaPageId
+      ) {
+        setLoadingBio(true);
+        setError(null);
+        getCelebrityWikipediaData(celebrity.wikipediaPageId)
+          .then((data) => {
+            setWikiData((prev) => ({
+              image: prev?.image || data.image,
+              bio: data.bio,
+            }));
+          })
+          .catch((err) => {
+            setError("Failed to load Wikipedia data");
+            console.error(err);
+          })
+          .finally(() => {
+            setLoadingBio(false);
+          });
+      }
+    }
+  }, [celebrity.bio, celebrity.wikipediaPageId, loadingBio, readOnly, wikiData?.bio]);
+
   // Fetch bio only when card is expanded
   const handleCardClick = async () => {
+    if (readOnly) return;
     if (
       !expanded &&
       !celebrity.bio &&
@@ -109,14 +145,27 @@ export function EnrichedGameCard({
         sx={{
           maxWidth: 400,
           margin: "0 auto",
-          cursor: "pointer",
-          transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+          cursor: readOnly ? "default" : "pointer",
+          transition: "all 0.25s ease",
           background: "rgba(255, 255, 255, 0.03)",
           backdropFilter: "blur(10px)",
           border: "1px solid rgba(255, 255, 255, 0.1)",
           borderRadius: 3,
           overflow: "hidden",
           position: "relative",
+          boxShadow:
+            voteState === "winner"
+              ? "0 0 0 2px rgba(76, 175, 80, 0.7), 0 16px 40px rgba(76, 175, 80, 0.25)"
+              : voteState === "loser"
+              ? "inset 0 0 120px rgba(0,0,0,0.35)"
+              : "0 0 0 rgba(0,0,0,0)",
+          transform:
+            voteState === "winner"
+              ? "translateY(-6px) scale(1.02)"
+              : voteState === "loser"
+              ? "translateY(0) scale(0.98)"
+              : undefined,
+          opacity: voteState === "loser" ? 0.7 : 1,
           "&::before": {
             content: '""',
             position: "absolute",
@@ -130,18 +179,20 @@ export function EnrichedGameCard({
             pointerEvents: "none",
             zIndex: 0,
           },
-          "&:hover": {
-            transform: "translateY(-8px) scale(1.02)",
-            boxShadow: "0 20px 40px rgba(123, 44, 191, 0.3), 0 0 40px rgba(199, 21, 133, 0.2)",
-            border: "1px solid rgba(123, 44, 191, 0.4)",
-            "&::before": {
-              opacity: 1,
-            },
-          },
+          "&:hover": readOnly
+            ? undefined
+            : {
+                transform: "translateY(-8px) scale(1.02)",
+                boxShadow: "0 20px 40px rgba(123, 44, 191, 0.3), 0 0 40px rgba(199, 21, 133, 0.2)",
+                border: "1px solid rgba(123, 44, 191, 0.4)",
+                "&::before": {
+                  opacity: 1,
+                },
+              },
         }}
-        onClick={handleCardClick}
-        aria-pressed={expanded}
-        role="button"
+        onClick={readOnly ? undefined : handleCardClick}
+        aria-pressed={readOnly ? undefined : expanded}
+        role={readOnly ? undefined : "button"}
       >
         {loadingImage && !displayImage ? (
           <Skeleton 
@@ -168,6 +219,28 @@ export function EnrichedGameCard({
               }}
               priority={position === "left"}
             />
+            {confirmed && (
+              <Box
+                sx={{
+                  position: "absolute",
+                  top: 12,
+                  left: 12,
+                  px: 1.25,
+                  py: 0.4,
+                  borderRadius: 1.5,
+                  fontSize: "0.75rem",
+                  fontWeight: 800,
+                  color: "white",
+                  background: "linear-gradient(135deg, #7B2CBF 0%, #FF006E 100%)",
+                  boxShadow: "0 6px 16px rgba(199, 21, 133, 0.35)",
+                  zIndex: 2,
+                  letterSpacing: "0.05em",
+                  textTransform: "uppercase",
+                }}
+              >
+                Confirmed Vaper
+              </Box>
+            )}
             <Box
               sx={{
                 position: "absolute",
@@ -306,47 +379,50 @@ export function EnrichedGameCard({
               </Typography>
             </Box>
           </Box>
+          
         </CardContent>
       </Card>
       
-      <Button
-        variant="contained"
-        onClick={onVote}
-        disabled={isVoting}
-        sx={{
-          mt: 3,
-          py: 1.2,
-          px: 2.5,
-          fontSize: "0.875rem",
-          fontWeight: 700,
-          borderRadius: 3,
-          alignSelf: "center",
-          width: "fit-content",
-          background: "linear-gradient(135deg, #7B2CBF 0%, #C71585 100%)",
-          boxShadow: "0 8px 20px rgba(123, 44, 191, 0.4)",
-          transition: "all 0.3s ease",
-          textTransform: "none",
-          letterSpacing: "0.05em",
-          "&:hover": {
-            background: "linear-gradient(135deg, #9333EA 0%, #E91E8C 100%)",
-            transform: "translateY(-2px)",
-            boxShadow: "0 12px 30px rgba(199, 21, 133, 0.6)",
-          },
-          "&:active": {
-            transform: "translateY(0px)",
-          },
-          "&:disabled": {
-            background: "rgba(123, 44, 191, 0.3)",
-            color: "rgba(248, 249, 250, 0.5)",
-          },
-        }}
-      >
-        {isVoting ? (
-          <CircularProgress size={24} color="inherit" />
-        ) : (
-          "More Likely to Vape"
-        )}
-      </Button>
+      {!readOnly && (
+        <Button
+          variant="contained"
+          onClick={onVote}
+          disabled={isVoting}
+          sx={{
+            mt: 3,
+            py: 1.2,
+            px: 2.5,
+            fontSize: "0.875rem",
+            fontWeight: 700,
+            borderRadius: 3,
+            alignSelf: "center",
+            width: "fit-content",
+            background: "linear-gradient(135deg, #7B2CBF 0%, #C71585 100%)",
+            boxShadow: "0 8px 20px rgba(123, 44, 191, 0.4)",
+            transition: "all 0.3s ease",
+            textTransform: "none",
+            letterSpacing: "0.05em",
+            "&:hover": {
+              background: "linear-gradient(135deg, #9333EA 0%, #E91E8C 100%)",
+              transform: "translateY(-2px)",
+              boxShadow: "0 12px 30px rgba(199, 21, 133, 0.6)",
+            },
+            "&:active": {
+              transform: "translateY(0px)",
+            },
+            "&:disabled": {
+              background: "rgba(123, 44, 191, 0.3)",
+              color: "rgba(248, 249, 250, 0.5)",
+            },
+          }}
+        >
+          {isVoting ? (
+            <CircularProgress size={24} color="inherit" />
+          ) : (
+            "More Likely to Vape"
+          )}
+        </Button>
+      )}
     </Box>
   );
 }

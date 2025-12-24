@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import Container from "@mui/material/Container";
 import Grid from "@mui/material/Grid";
 import Button from "@mui/material/Button";
@@ -12,21 +13,45 @@ import { EnrichedGameCard } from "./components/EnrichedGameCard";
 import { type Celebrity } from "@/types/celebrity";
 import { voteBetweenCelebrities, getRandomCelebrityPair } from "./actions/celebrities";
 
-export default function Home() {
+function HomeContent() {
+  const searchParams = useSearchParams();
   const [pair, setPair] = useState<{ a: Celebrity; b: Celebrity } | null>(null);
+  const [prefetchedPair, setPrefetchedPair] = useState<{ a: Celebrity; b: Celebrity } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [voting, setVoting] = useState(false);
+  const [voteFeedback, setVoteFeedback] = useState<"A" | "B" | null>(null);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
 
-  // Fetch random pair
+  // Prefetch next pair in background
+  const prefetchNextPair = async () => {
+    try {
+      const nextPair = await getRandomCelebrityPair();
+      setPrefetchedPair(nextPair);
+    } catch (err) {
+      console.error("Failed to prefetch next pair:", err);
+      setPrefetchedPair(null);
+    }
+  };
+
+  // Fetch random pair (use prefetched if available)
   const fetchPair = async () => {
     setLoading(true);
     setError(null);
     try {
-      const pair = await getRandomCelebrityPair();
-      setPair(pair);
+      // Use prefetched pair if available
+      if (prefetchedPair) {
+        setPair(prefetchedPair);
+        setPrefetchedPair(null);
+        // Start prefetching the next one
+        prefetchNextPair();
+      } else {
+        const pair = await getRandomCelebrityPair();
+        setPair(pair);
+        // Start prefetching the next one
+        prefetchNextPair();
+      }
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to load celebrity pair"
@@ -40,6 +65,16 @@ export default function Home() {
   useEffect(() => {
     fetchPair();
   }, []);
+
+  // Capture ?admin=CODE and store locally for admin actions
+  useEffect(() => {
+    try {
+      const code = searchParams?.get("admin");
+      if (code) {
+        localStorage.setItem("adminCode", code);
+      }
+    } catch {}
+  }, [searchParams]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -65,18 +100,38 @@ export default function Home() {
   const handleVote = async (winner: "A" | "B") => {
     if (!pair) return;
     setVoting(true);
+    // Show quick feedback animation before swapping cards
+    setVoteFeedback(winner);
+    await new Promise((r) => setTimeout(r, 180));
+    
+    // Save vote request to run in background
+    const votePromise = voteBetweenCelebrities({
+      celebAId: pair.a.id,
+      celebBId: pair.b.id,
+      winner,
+    });
+
     try {
-      await voteBetweenCelebrities({
-        celebAId: pair.a.id,
-        celebBId: pair.b.id,
-        winner,
-      });
-      // Fetch next pair
-      await fetchPair();
+      // If we have a prefetched pair, show it immediately
+      if (prefetchedPair) {
+        setPair(prefetchedPair);
+        setPrefetchedPair(null);
+        // Start prefetching the next one while vote is being recorded
+        prefetchNextPair();
+        // Wait for vote to complete in background
+        await votePromise;
+      } else {
+        // No prefetched pair, wait for vote then fetch
+        await votePromise;
+        await fetchPair();
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to record vote");
+      // On error, try to fetch a new pair
+      await fetchPair();
     } finally {
       setVoting(false);
+      setVoteFeedback(null);
     }
   };
 
@@ -226,6 +281,7 @@ export default function Home() {
                 onVote={() => handleVote("A")}
                 isVoting={voting}
                 position="left"
+                voteState={voteFeedback === "A" ? "winner" : voteFeedback === "B" ? "loser" : null}
               />
             </Grid>
             <Grid size={{ xs: 12, md: 6 }}>
@@ -235,11 +291,26 @@ export default function Home() {
                 onVote={() => handleVote("B")}
                 isVoting={voting}
                 position="right"
+                voteState={voteFeedback === "B" ? "winner" : voteFeedback === "A" ? "loser" : null}
               />
             </Grid>
           </Grid>
         ) : null}
       </Box>
     </Container>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={
+      <Container maxWidth="lg">
+        <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh" }}>
+          <CircularProgress />
+        </Box>
+      </Container>
+    }>
+      <HomeContent />
+    </Suspense>
   );
 }
