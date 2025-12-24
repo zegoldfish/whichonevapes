@@ -60,9 +60,9 @@ jobs:
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
           DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
         run: |
-          # Setup SSH
+          # Setup SSH (strip CRs to avoid libcrypto errors)
           mkdir -p ~/.ssh
-          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/ec2_key
+          echo "${{ secrets.EC2_SSH_KEY }}" | tr -d '\r' > ~/.ssh/ec2_key
           chmod 600 ~/.ssh/ec2_key
           ssh-keyscan -H $EC2_HOST >> ~/.ssh/known_hosts
 
@@ -74,7 +74,7 @@ jobs:
           REGION="${{ env.AWS_REGION }}"
 
           # Deploy on EC2
-          ssh -i ~/.ssh/ec2_key $EC2_USER@$EC2_HOST << EOF2
+          ssh -T -i ~/.ssh/ec2_key $EC2_USER@$EC2_HOST << EOF2
             set -e
             docker system prune -af
 
