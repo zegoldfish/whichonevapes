@@ -60,8 +60,8 @@ export function EnrichedGameCard({
           setLoadingImage(false);
         });
     }
-    // Only run this effect when the celebrity input changes
-  }, [celebrity.id, celebrity.image, celebrity.wikipediaPageId]);
+    // Run this effect when the celebrity input or relevant wiki data changes
+  }, [celebrity.id, celebrity.image, celebrity.wikipediaPageId, wikiData]);
 
   // Fetch bio only when card is expanded
   const handleCardClick = async () => {
