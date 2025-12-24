@@ -1,0 +1,40 @@
+:root {
+  --background: #0A1128;
+  --text: #F8F9FA;
+  --primary: #7B2CBF;
+  --secondary: #C71585;
+  --accent: #FF006E;
+}
+
+body {
+  color: var(--text);
+  background: var(--background);
+  font-family: 'Roboto', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.form-page {
+  color: var(--text);
+}
+
+.form-field .MuiInputBase-root {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+}
+
+.form-field .MuiInputLabel-root {
+  color: rgba(248, 249, 250, 0.7);
+}
+
+.form-field .MuiOutlinedInput-notchedOutline {
+  border-color: rgba(248, 249, 250, 0.25);
+}
+
+.form-field:hover .MuiOutlinedInput-notchedOutline {
+  border-color: rgba(248, 249, 250, 0.6);
+}
+
+.form-field .Mui-focused .MuiOutlinedInput-notchedOutline {
+  border-color: var(--secondary);
+}
