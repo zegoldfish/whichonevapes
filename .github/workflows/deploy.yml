@@ -40,7 +40,7 @@ jobs:
           IMAGE_TAG: ${{ github.sha }}
         run: |
           docker build -t ${{ env.DOCKER_REPOSITORY }}:$IMAGE_TAG .
-          docker build -t ${{ env.DOCKER_REPOSITORY }}:latest .
+          docker tag ${{ env.DOCKER_REPOSITORY }}:$IMAGE_TAG ${{ env.DOCKER_REPOSITORY }}:latest
           docker push ${{ env.DOCKER_REPOSITORY }}:$IMAGE_TAG
           docker push ${{ env.DOCKER_REPOSITORY }}:latest
 
