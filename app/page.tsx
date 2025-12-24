@@ -227,24 +227,6 @@ function HomeContent() {
           >
             New Pair
           </Button>
-          <Button
-            variant="text"
-            onClick={fetchPair}
-            sx={{
-              color: "rgba(248, 249, 250, 0.9)",
-              textTransform: "none",
-              borderRadius: 2,
-              px: 2,
-              py: 1,
-              transition: "all 0.3s ease",
-              "&:hover": {
-                transform: "translateY(-2px)",
-                color: "var(--accent)",
-              },
-            }}
-          >
-            Skip
-          </Button>
         </Box>
 
         <Box
