@@ -1,11 +1,17 @@
 /**
  * Wikipedia API utilities for fetching celebrity information
+ * Now with aggressive S3 + DynamoDB caching
  */
 
 import { rateLimit } from "./rateLimit";
+import {
+  getCachedWikipediaData,
+  cacheWikipediaData,
+  batchGetCachedWikipediaData,
+} from "./aws/wikipediaCache";
 
 const WIKIPEDIA_API = "https://en.wikipedia.org/w/api.php";
-const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
+const MEMORY_CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours in-memory cache
 const GLOBAL_WINDOW_MS = 60_000;
 const GLOBAL_MAX = 100; // Max global calls per minute per instance (Wikipedia allows 200/s for bots)
 const PER_PAGE_MAX = 10; // Max calls per page per minute
@@ -18,7 +24,8 @@ interface WikipediaResult {
   image: string | null;
 }
 
-const cache = new Map<string, { expires: number; value: WikipediaResult }>();
+// In-memory cache for ultra-fast access (L1 cache)
+const memoryCache = new Map<string, { expires: number; value: WikipediaResult }>();
 const inFlight = new Map<string, Promise<WikipediaResult>>();
 
 /**
@@ -31,10 +38,10 @@ export async function fetchWikipediaData(
 ): Promise<WikipediaResult> {
   const now = Date.now();
 
-  // Fresh cache hit
-  const cached = cache.get(pageId);
-  if (cached && cached.expires > now) {
-    return cached.value;
+  // L1: In-memory cache hit (fastest)
+  const memoryCached = memoryCache.get(pageId);
+  if (memoryCached && memoryCached.expires > now) {
+    return memoryCached.value;
   }
 
   // Deduplicate concurrent requests for the same page
@@ -44,6 +51,18 @@ export async function fetchWikipediaData(
   }
 
   const request = (async () => {
+    // L2: Check DynamoDB + S3 cache (persistent)
+    const persistentCache = await getCachedWikipediaData(pageId);
+    if (persistentCache) {
+      const result: WikipediaResult = {
+        title: persistentCache.title,
+        bio: persistentCache.bio,
+        image: persistentCache.imageUrl,
+      };
+      // Populate in-memory cache
+      memoryCache.set(pageId, { value: result, expires: now + MEMORY_CACHE_TTL_MS });
+      return result;
+    }
     // Try with exponential backoff
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
       const globalLimit = rateLimit({ key: "wikipedia:global", windowMs: GLOBAL_WINDOW_MS, max: GLOBAL_MAX });
@@ -54,8 +73,8 @@ export async function fetchWikipediaData(
         const retryMs = Math.max(globalLimit.retryAfterMs || 0, pageLimit.retryAfterMs || 0);
         
         // If we have cached data, serve it (stale-while-revalidate pattern)
-        if (cached) {
-          return cached.value;
+        if (memoryCached) {
+          return memoryCached.value;
         }
 
         // If this is our last attempt, throw
@@ -118,13 +137,25 @@ export async function fetchWikipediaData(
         image: page.thumbnail?.source || null,
       };
 
-      cache.set(pageId, { value: result, expires: now + CACHE_TTL_MS });
+      // Save to in-memory cache
+      memoryCache.set(pageId, { value: result, expires: now + MEMORY_CACHE_TTL_MS });
+      
+      // Save to persistent cache (S3 + DynamoDB) - async, don't block
+      cacheWikipediaData(
+        pageId,
+        result.title,
+        result.bio,
+        result.image
+      ).catch(err => {
+        console.error(`Failed to persist Wikipedia cache for ${pageId}:`, err);
+      });
+
       return result;
     } catch (error) {
       console.error(`Error fetching Wikipedia data for page ID ${pageId}:`, error);
-      // Return stale cache if available
-      if (cached) {
-        return cached.value;
+      // Return stale in-memory cache if available
+      if (memoryCached) {
+        return memoryCached.value;
       }
       return { title: "", bio: null, image: null };
     }
@@ -150,21 +181,53 @@ export async function fetchWikipediaDataBatch(
     return [];
   }
 
-  // Check cache first
   const now = Date.now();
   const results: (WikipediaResult | null)[] = new Array(pageIds.length).fill(null);
   const uncachedIndices: number[] = [];
   const uncachedPageIds: string[] = [];
 
+  // L1: Check in-memory cache first
   pageIds.forEach((pageId, index) => {
-    const cached = cache.get(pageId);
-    if (cached && cached.expires > now) {
-      results[index] = cached.value;
+    const memoryCached = memoryCache.get(pageId);
+    if (memoryCached && memoryCached.expires > now) {
+      results[index] = memoryCached.value;
     } else {
       uncachedIndices.push(index);
       uncachedPageIds.push(pageId);
     }
   });
+
+  // L2: Check DynamoDB cache for uncached items
+  if (uncachedPageIds.length > 0) {
+    const persistentCacheMap = await batchGetCachedWikipediaData(uncachedPageIds);
+    
+    const stillUncachedIndices: number[] = [];
+    const stillUncachedPageIds: string[] = [];
+
+    uncachedPageIds.forEach((pageId, i) => {
+      const persistentCache = persistentCacheMap.get(pageId);
+      const originalIndex = pageIds.indexOf(pageId);
+      
+      if (persistentCache) {
+        const result: WikipediaResult = {
+          title: persistentCache.title,
+          bio: persistentCache.bio,
+          image: persistentCache.imageUrl,
+        };
+        results[originalIndex] = result;
+        // Populate in-memory cache
+        memoryCache.set(pageId, { value: result, expires: now + MEMORY_CACHE_TTL_MS });
+      } else {
+        stillUncachedIndices.push(originalIndex);
+        stillUncachedPageIds.push(pageId);
+      }
+    });
+
+    uncachedIndices.length = 0;
+    uncachedPageIds.length = 0;
+    uncachedIndices.push(...stillUncachedIndices);
+    uncachedPageIds.push(...stillUncachedPageIds);
+  }
 
   // If everything is cached, return early
   if (uncachedPageIds.length === 0) {
@@ -240,8 +303,18 @@ export async function fetchWikipediaDataBatch(
           image: page.thumbnail?.source || null,
         };
 
-        cache.set(pageId, { value: result, expires: now + CACHE_TTL_MS });
+        memoryCache.set(pageId, { value: result, expires: now + MEMORY_CACHE_TTL_MS });
         results[originalIndex] = result;
+
+        // Save to persistent cache async
+        cacheWikipediaData(
+          pageId,
+          result.title,
+          result.bio,
+          result.image
+        ).catch(err => {
+          console.error(`Failed to persist Wikipedia cache for ${pageId}:`, err);
+        });
       });
     } catch (error) {
       console.error(`Error fetching Wikipedia batch:`, error);
