@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import Container from "@mui/material/Container";
 import Grid from "@mui/material/Grid";
 import Button from "@mui/material/Button";
@@ -13,6 +14,7 @@ import { type Celebrity } from "@/types/celebrity";
 import { voteBetweenCelebrities, getRandomCelebrityPair } from "./actions/celebrities";
 
 export default function Home() {
+  const searchParams = useSearchParams();
   const [pair, setPair] = useState<{ a: Celebrity; b: Celebrity } | null>(null);
   const [prefetchedPair, setPrefetchedPair] = useState<{ a: Celebrity; b: Celebrity } | null>(null);
   const [loading, setLoading] = useState(true);
@@ -63,6 +65,16 @@ export default function Home() {
   useEffect(() => {
     fetchPair();
   }, []);
+
+  // Capture ?admin=CODE and store locally for admin actions
+  useEffect(() => {
+    try {
+      const code = searchParams?.get("admin");
+      if (code) {
+        localStorage.setItem("adminCode", code);
+      }
+    } catch {}
+  }, [searchParams]);
 
   // Keyboard navigation
   useEffect(() => {

@@ -6,6 +6,7 @@ import {
   TransactWriteCommand,
   BatchGetCommand,
   ScanCommand,
+  UpdateCommand,
 } from "@aws-sdk/lib-dynamodb";
 import {
   type Celebrity,
@@ -160,6 +161,30 @@ async function getCachedCelebrities(): Promise<Celebrity[]> {
   return cachedCelebrities;
 }
 
+export async function getCelebrityById(id: string): Promise<Celebrity | null> {
+  // Try cache first
+  const cached = cachedCelebrities.find((c) => c.id === id);
+  if (cached) return cached;
+
+  // Fetch directly
+  const batch = await ddb.send(
+    new BatchGetCommand({
+      RequestItems: {
+        [CELEBRITIES_TABLE_NAME]: {
+          Keys: [{ id }],
+        },
+      },
+    })
+  );
+  const items = (batch.Responses?.[CELEBRITIES_TABLE_NAME] || []) as Celebrity[];
+  const celeb = items[0];
+  if (celeb) {
+    // Update cache entry for future calls
+    cachedCelebrities = [...cachedCelebrities.filter((c) => c.id !== id), celeb];
+  }
+  return celeb ?? null;
+}
+
 // Fetch a random pair of celebrities
 export async function getRandomCelebrityPair(): Promise<{
   a: Celebrity;
@@ -233,4 +258,57 @@ export async function getCelebrityWikipediaData(pageId: string): Promise<{
     bio: wikiData.bio,
     image: wikiData.image,
   };
+}
+
+// Admin: set confirmed vaper flag for a celebrity
+export async function setCelebrityConfirmedVaper(params: {
+  id: string;
+  confirmed: boolean;
+  adminCode: string;
+}): Promise<Celebrity> {
+  const schema = z.object({
+    id: z.string().uuid(),
+    confirmed: z.boolean(),
+    adminCode: z.string().min(1),
+  });
+  const { id, confirmed, adminCode } = schema.parse(params);
+
+  const expected = process.env.ADMIN_CODE || process.env.CONFIRM_ADMIN_CODE;
+  if (!expected || adminCode !== expected) {
+    throw new Error("Unauthorized: invalid admin code");
+  }
+
+  const now = new Date().toISOString();
+  await ddb.send(
+    new UpdateCommand({
+      TableName: CELEBRITIES_TABLE_NAME,
+      Key: { id },
+      UpdateExpression: "SET confirmedVaper = :c, updatedAt = :now",
+      ExpressionAttributeValues: {
+        ":c": confirmed,
+        ":now": now,
+      },
+      ConditionExpression: "attribute_exists(id)",
+    })
+  );
+
+  // Return the updated item
+  const batch = await ddb.send(
+    new BatchGetCommand({
+      RequestItems: {
+        [CELEBRITIES_TABLE_NAME]: {
+          Keys: [{ id }],
+        },
+      },
+    })
+  );
+  const items = (batch.Responses?.[CELEBRITIES_TABLE_NAME] || []) as Celebrity[];
+  const celebrity = items[0];
+  if (!celebrity) {
+    throw new Error("Celebrity not found after update");
+  }
+  // Bust local cache next time by resetting timestamp
+  cachedCelebrities = [];
+  lastCacheUpdate = 0;
+  return celebrity;
 }

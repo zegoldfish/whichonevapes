@@ -47,6 +47,8 @@ export function EnrichedGameCard({
     setLoadingBio(false);
   }, [celebrity.id]);
 
+  const confirmed = Boolean((celebrity as any).confirmedVaper);
+
   // Fetch Wikipedia image automatically on mount if not already available
   useEffect(() => {
     if (!celebrity.image && !wikiData?.image && celebrity.wikipediaPageId) {
@@ -183,6 +185,28 @@ export function EnrichedGameCard({
               }}
               priority={position === "left"}
             />
+            {confirmed && (
+              <Box
+                sx={{
+                  position: "absolute",
+                  top: 12,
+                  left: 12,
+                  px: 1.25,
+                  py: 0.4,
+                  borderRadius: 1.5,
+                  fontSize: "0.75rem",
+                  fontWeight: 800,
+                  color: "white",
+                  background: "linear-gradient(135deg, #7B2CBF 0%, #FF006E 100%)",
+                  boxShadow: "0 6px 16px rgba(199, 21, 133, 0.35)",
+                  zIndex: 2,
+                  letterSpacing: "0.05em",
+                  textTransform: "uppercase",
+                }}
+              >
+                Confirmed Vaper
+              </Box>
+            )}
             <Box
               sx={{
                 position: "absolute",
@@ -321,6 +345,7 @@ export function EnrichedGameCard({
               </Typography>
             </Box>
           </Box>
+          
         </CardContent>
       </Card>
       

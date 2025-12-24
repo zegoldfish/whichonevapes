@@ -1,4 +1,5 @@
 import { getAllCelebrities } from "@/app/actions/celebrities";
+import Link from "next/link";
 import {
   Container,
   Box,
@@ -206,7 +207,35 @@ export default async function RankingsPage({
                       fontSize: isTopThree ? "1.1rem" : "1rem",
                     }}
                   >
-                    {celeb.name}
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
+                      <Link
+                        href={`/celeb/${celeb.id}`}
+                        style={{
+                          color: "var(--text)",
+                          textDecoration: "none",
+                          fontWeight: isTopThree ? 700 : 400,
+                        }}
+                      >
+                        {celeb.name}
+                      </Link>
+                      {Boolean((celeb as any).confirmedVaper) && (
+                        <Box
+                          component="span"
+                          sx={{
+                            px: 1,
+                            py: 0.25,
+                            borderRadius: 999,
+                            fontSize: "0.7rem",
+                            fontWeight: 700,
+                            color: "white",
+                            background: "linear-gradient(135deg, #7B2CBF 0%, #FF006E 100%)",
+                            boxShadow: "0 4px 12px rgba(199, 21, 133, 0.35)",
+                          }}
+                        >
+                          Confirmed
+                        </Box>
+                      )}
+                    </Box>
                   </TableCell>
                   <TableCell
                     align="right"
