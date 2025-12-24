@@ -134,14 +134,24 @@ export async function getRandomCelebrityPair(): Promise<{
   a: Celebrity;
   b: Celebrity;
 }> {
-  const scan = await ddb.send(
-    new ScanCommand({
-      TableName: CELEBRITIES_TABLE_NAME,
-      Limit: 100, // Adjust as needed
-    })
-  );
+  // Collect items with pagination up to a reasonable limit for random selection
+  const items: Celebrity[] = [];
+  let lastEvaluatedKey: Record<string, unknown> | undefined;
+  const maxItems = 500; // Sample from up to 500 items for better randomness
 
-  const items = (scan.Items || []) as Celebrity[];
+  do {
+    const scan = await ddb.send(
+      new ScanCommand({
+        TableName: CELEBRITIES_TABLE_NAME,
+        Limit: 100,
+        ExclusiveStartKey: lastEvaluatedKey,
+      })
+    );
+
+    items.push(...((scan.Items || []) as Celebrity[]));
+    lastEvaluatedKey = scan.LastEvaluatedKey as Record<string, unknown> | undefined;
+  } while (lastEvaluatedKey && items.length < maxItems);
+
   if (items.length < 2) {
     throw new Error("Not enough celebrities in database");
   }
