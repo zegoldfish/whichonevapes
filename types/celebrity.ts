@@ -11,7 +11,7 @@ export const CelebritySchema = z.object({
   elo: z.number().int().min(0).default(1000),
   wins: z.number().int().min(0).default(0),
   matches: z.number().int().min(0).default(0),
-  confirmedVaper: z.boolean().default(false).optional(),
+  confirmedVaper: z.boolean().default(false),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });
