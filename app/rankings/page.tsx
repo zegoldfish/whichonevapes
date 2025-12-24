@@ -10,7 +10,6 @@ import {
   TableRow,
   Paper,
   Typography,
-  Pagination,
 } from "@mui/material";
 import RankingsPagination from "@/app/components/RankingsPagination";
 
