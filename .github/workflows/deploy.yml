@@ -57,6 +57,7 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/ec2_key
           chmod 600 ~/.ssh/ec2_key
+          trap 'rm -f ~/.ssh/ec2_key' EXIT
           ssh-keyscan -H $EC2_HOST >> ~/.ssh/known_hosts
           
           # Deploy on EC2
