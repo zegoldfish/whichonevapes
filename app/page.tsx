@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Container from "@mui/material/Container";
 import Grid from "@mui/material/Grid";
@@ -13,7 +13,7 @@ import { EnrichedGameCard } from "./components/EnrichedGameCard";
 import { type Celebrity } from "@/types/celebrity";
 import { voteBetweenCelebrities, getRandomCelebrityPair } from "./actions/celebrities";
 
-export default function Home() {
+function HomeContent() {
   const searchParams = useSearchParams();
   const [pair, setPair] = useState<{ a: Celebrity; b: Celebrity } | null>(null);
   const [prefetchedPair, setPrefetchedPair] = useState<{ a: Celebrity; b: Celebrity } | null>(null);
@@ -316,5 +316,19 @@ export default function Home() {
         ) : null}
       </Box>
     </Container>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={
+      <Container maxWidth="lg">
+        <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "100vh" }}>
+          <CircularProgress />
+        </Box>
+      </Container>
+    }>
+      <HomeContent />
+    </Suspense>
   );
 }
