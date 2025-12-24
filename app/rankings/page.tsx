@@ -22,8 +22,10 @@ export default async function RankingsPage({
 }) {
   const celebrities = await getAllCelebrities();
   const params = await searchParams;
-  const currentPage = Number(params.page) || 1;
+  const requestedPage = Number(params.page) || 1;
   const totalPages = Math.ceil(celebrities.length / ITEMS_PER_PAGE);
+  // Clamp currentPage to valid range [1, totalPages]
+  const currentPage = Math.max(1, Math.min(requestedPage, totalPages));
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const endIndex = startIndex + ITEMS_PER_PAGE;
   const paginatedCelebrities = celebrities.slice(startIndex, endIndex);
