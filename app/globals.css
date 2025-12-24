@@ -6,12 +6,66 @@
   --accent: #FF006E;
 }
 
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+}
+
+@keyframes glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(123, 44, 191, 0.3); }
+  50% { box-shadow: 0 0 40px rgba(199, 21, 133, 0.6), 0 0 60px rgba(123, 44, 191, 0.4); }
+}
+
 body {
   color: var(--text);
-  background: var(--background);
+  background: linear-gradient(
+    -45deg, 
+    #0A1128, 
+    #1a0b2e, 
+    #16123f, 
+    #0A1128
+  );
+  background-size: 400% 400%;
+  animation: gradientShift 15s ease infinite;
   font-family: 'Roboto', Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(
+    circle at 20% 80%, 
+    rgba(123, 44, 191, 0.15) 0%, 
+    transparent 50%
+  ),
+  radial-gradient(
+    circle at 80% 20%, 
+    rgba(199, 21, 133, 0.15) 0%, 
+    transparent 50%
+  );
+  animation: float 20s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+main {
+  position: relative;
+  z-index: 1;
 }
 
 .form-page {
