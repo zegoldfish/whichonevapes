@@ -14,6 +14,7 @@ export function ClientCelebrityCard({ celebrity }: Props) {
       onVote={() => {}}
       isVoting={true}
       position="left"
+      readOnly
     />
   );
 }

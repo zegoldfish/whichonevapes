@@ -20,6 +20,7 @@ interface EnrichedGameCardProps {
   isVoting: boolean;
   position: "left" | "right";
   voteState?: "winner" | "loser" | null;
+  readOnly?: boolean;
 }
 
 export function EnrichedGameCard({
@@ -28,6 +29,7 @@ export function EnrichedGameCard({
   isVoting,
   position,
   voteState = null,
+  readOnly = false,
 }: EnrichedGameCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [wikiData, setWikiData] = useState<{
@@ -67,8 +69,38 @@ export function EnrichedGameCard({
     // Run this effect when the celebrity input or relevant wiki data changes
   }, [celebrity.id, celebrity.image, celebrity.wikipediaPageId, wikiData]);
 
+  useEffect(() => {
+    if (readOnly) {
+      setExpanded(true);
+      if (
+        !celebrity.bio &&
+        !wikiData?.bio &&
+        !loadingBio &&
+        celebrity.wikipediaPageId
+      ) {
+        setLoadingBio(true);
+        setError(null);
+        getCelebrityWikipediaData(celebrity.wikipediaPageId)
+          .then((data) => {
+            setWikiData((prev) => ({
+              image: prev?.image || data.image,
+              bio: data.bio,
+            }));
+          })
+          .catch((err) => {
+            setError("Failed to load Wikipedia data");
+            console.error(err);
+          })
+          .finally(() => {
+            setLoadingBio(false);
+          });
+      }
+    }
+  }, [celebrity.bio, celebrity.wikipediaPageId, loadingBio, readOnly, wikiData?.bio]);
+
   // Fetch bio only when card is expanded
   const handleCardClick = async () => {
+    if (readOnly) return;
     if (
       !expanded &&
       !celebrity.bio &&
@@ -113,7 +145,7 @@ export function EnrichedGameCard({
         sx={{
           maxWidth: 400,
           margin: "0 auto",
-          cursor: "pointer",
+          cursor: readOnly ? "default" : "pointer",
           transition: "all 0.25s ease",
           background: "rgba(255, 255, 255, 0.03)",
           backdropFilter: "blur(10px)",
@@ -147,18 +179,20 @@ export function EnrichedGameCard({
             pointerEvents: "none",
             zIndex: 0,
           },
-          "&:hover": {
-            transform: "translateY(-8px) scale(1.02)",
-            boxShadow: "0 20px 40px rgba(123, 44, 191, 0.3), 0 0 40px rgba(199, 21, 133, 0.2)",
-            border: "1px solid rgba(123, 44, 191, 0.4)",
-            "&::before": {
-              opacity: 1,
-            },
-          },
+          "&:hover": readOnly
+            ? undefined
+            : {
+                transform: "translateY(-8px) scale(1.02)",
+                boxShadow: "0 20px 40px rgba(123, 44, 191, 0.3), 0 0 40px rgba(199, 21, 133, 0.2)",
+                border: "1px solid rgba(123, 44, 191, 0.4)",
+                "&::before": {
+                  opacity: 1,
+                },
+              },
         }}
-        onClick={handleCardClick}
-        aria-pressed={expanded}
-        role="button"
+        onClick={readOnly ? undefined : handleCardClick}
+        aria-pressed={readOnly ? undefined : expanded}
+        role={readOnly ? undefined : "button"}
       >
         {loadingImage && !displayImage ? (
           <Skeleton 
@@ -349,44 +383,46 @@ export function EnrichedGameCard({
         </CardContent>
       </Card>
       
-      <Button
-        variant="contained"
-        onClick={onVote}
-        disabled={isVoting}
-        sx={{
-          mt: 3,
-          py: 1.2,
-          px: 2.5,
-          fontSize: "0.875rem",
-          fontWeight: 700,
-          borderRadius: 3,
-          alignSelf: "center",
-          width: "fit-content",
-          background: "linear-gradient(135deg, #7B2CBF 0%, #C71585 100%)",
-          boxShadow: "0 8px 20px rgba(123, 44, 191, 0.4)",
-          transition: "all 0.3s ease",
-          textTransform: "none",
-          letterSpacing: "0.05em",
-          "&:hover": {
-            background: "linear-gradient(135deg, #9333EA 0%, #E91E8C 100%)",
-            transform: "translateY(-2px)",
-            boxShadow: "0 12px 30px rgba(199, 21, 133, 0.6)",
-          },
-          "&:active": {
-            transform: "translateY(0px)",
-          },
-          "&:disabled": {
-            background: "rgba(123, 44, 191, 0.3)",
-            color: "rgba(248, 249, 250, 0.5)",
-          },
-        }}
-      >
-        {isVoting ? (
-          <CircularProgress size={24} color="inherit" />
-        ) : (
-          "More Likely to Vape"
-        )}
-      </Button>
+      {!readOnly && (
+        <Button
+          variant="contained"
+          onClick={onVote}
+          disabled={isVoting}
+          sx={{
+            mt: 3,
+            py: 1.2,
+            px: 2.5,
+            fontSize: "0.875rem",
+            fontWeight: 700,
+            borderRadius: 3,
+            alignSelf: "center",
+            width: "fit-content",
+            background: "linear-gradient(135deg, #7B2CBF 0%, #C71585 100%)",
+            boxShadow: "0 8px 20px rgba(123, 44, 191, 0.4)",
+            transition: "all 0.3s ease",
+            textTransform: "none",
+            letterSpacing: "0.05em",
+            "&:hover": {
+              background: "linear-gradient(135deg, #9333EA 0%, #E91E8C 100%)",
+              transform: "translateY(-2px)",
+              boxShadow: "0 12px 30px rgba(199, 21, 133, 0.6)",
+            },
+            "&:active": {
+              transform: "translateY(0px)",
+            },
+            "&:disabled": {
+              background: "rgba(123, 44, 191, 0.3)",
+              color: "rgba(248, 249, 250, 0.5)",
+            },
+          }}
+        >
+          {isVoting ? (
+            <CircularProgress size={24} color="inherit" />
+          ) : (
+            "More Likely to Vape"
+          )}
+        </Button>
+      )}
     </Box>
   );
 }
