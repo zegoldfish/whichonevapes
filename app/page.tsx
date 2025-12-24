@@ -88,6 +88,9 @@ export default function Home() {
   const handleVote = async (winner: "A" | "B") => {
     if (!pair) return;
     setVoting(true);
+    // Show quick feedback animation before swapping cards
+    setVoteFeedback(winner);
+    await new Promise((r) => setTimeout(r, 180));
     
     // Save vote request to run in background
     const votePromise = voteBetweenCelebrities({
