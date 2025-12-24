@@ -81,7 +81,6 @@ jobs:
               -p 3000:3000 \
               --name whichonevapes \
               --restart unless-stopped \
-              -e HOSTNAME="0.0.0.0" \
               -e AWS_REGION="$REGION" \
               "$DOCKER_REPO:$IMAGE_TAG_VAL"
           EOF2
