@@ -11,8 +11,8 @@ export const CelebritySchema = z.object({
   elo: z.number().int().min(0).default(1000),
   wins: z.number().int().min(0).default(0),
   matches: z.number().int().min(0).default(0),
-  createdAt: z.iso.datetime(),
-  updatedAt: z.iso.datetime(),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
 });
 
 export type Celebrity = z.infer<typeof CelebritySchema>;
