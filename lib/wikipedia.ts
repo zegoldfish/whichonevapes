@@ -85,7 +85,7 @@ export async function fetchWikipediaData(
 
         // Exponential backoff: wait before retrying
         const backoffDelay = INITIAL_RETRY_DELAY_MS * Math.pow(2, attempt);
-        await new Promise(resolve => setTimeout(resolve, Math.min(backoffDelay, retryMs)));
+        await new Promise(resolve => setTimeout(resolve, Math.max(backoffDelay, retryMs)));
         continue;
       }
 
