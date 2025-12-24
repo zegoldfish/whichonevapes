@@ -1,0 +1,94 @@
+name: Build and Deploy to EC2
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+env:
+  AWS_REGION: us-east-1
+  DOCKER_REPOSITORY: notbryancannoy/whichonevapes
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Free up disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/local/share/boost
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          docker system prune -af
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build, tag, and push image to Docker Hub
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t ${{ env.DOCKER_REPOSITORY }}:$IMAGE_TAG .
+          docker build -t ${{ env.DOCKER_REPOSITORY }}:latest .
+          docker push ${{ env.DOCKER_REPOSITORY }}:$IMAGE_TAG
+          docker push ${{ env.DOCKER_REPOSITORY }}:latest
+
+      - name: Deploy to EC2
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_USER: ubuntu
+          IMAGE_TAG: ${{ github.sha }}
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          # Setup SSH
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/ec2_key
+          chmod 600 ~/.ssh/ec2_key
+          ssh-keyscan -H $EC2_HOST >> ~/.ssh/known_hosts
+          
+          # Deploy on EC2
+          ssh -i ~/.ssh/ec2_key $EC2_USER@$EC2_HOST << 'ENDSSH'
+            # Free up disk space
+            docker system prune -af
+            
+            # Login to Docker Hub
+            echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+
+            # Pull image for this commit
+            docker pull ${{ env.DOCKER_REPOSITORY }}:${{ env.IMAGE_TAG }}
+            
+            # Stop old container
+            docker stop whichonevapes 2>/dev/null || true
+            docker rm whichonevapes 2>/dev/null || true
+
+            # Run new container with env vars
+            docker run -d \
+              -p 3000:3000 \
+              --name whichonevapes \
+              --restart unless-stopped \
+              -e HOSTNAME="0.0.0.0" \
+              -e AWS_REGION="${{ secrets.AWS_REGION }}" \
+              -e AWS_ACCESS_KEY_ID="${{ secrets.AWS_ACCESS_KEY_ID }}" \
+              -e AWS_SECRET_ACCESS_KEY="${{ secrets.AWS_SECRET_ACCESS_KEY }}" \
+              ${{ env.DOCKER_REPOSITORY }}:${{ env.IMAGE_TAG }}
+          ENDSSH
