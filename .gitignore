@@ -46,3 +46,5 @@ terraform/.terraform.lock.hcl
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+terraform/
