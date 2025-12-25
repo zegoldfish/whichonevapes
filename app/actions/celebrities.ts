@@ -149,7 +149,7 @@ export async function getAllCelebrities(): Promise<Celebrity[]> {
 }
 
 const ELO_GSI_NAME = "elo-gsi";
-const ELO_GSI_PARTITION_VALUE = process.env.CELEBRITIES_ELO_PARTITION || "GLOBAL";
+const ELO_GSI_PARTITION_VALUE = "GLOBAL";
 
 // Paginated fetch of ranked celebrities (cursor-based)
 export async function getRankedCelebritiesPage(params: {
@@ -176,27 +176,17 @@ export async function getRankedCelebritiesPage(params: {
   let pagesFetched = 0;
 
   const fetchPage = async () => {
-    if (ELO_GSI_NAME) {
-      return ddb.send(
-        new QueryCommand({
-          TableName: CELEBRITIES_TABLE_NAME,
-          IndexName: ELO_GSI_NAME,
-          KeyConditionExpression: "rankPartition = :pk",
-          ExpressionAttributeValues: {
-            ":pk": ELO_GSI_PARTITION_VALUE,
-          },
-          Limit: pageSize,
-          ExclusiveStartKey: exclusiveStartKey,
-          ScanIndexForward: false, // highest elo first
-        })
-      );
-    }
-
     return ddb.send(
-      new ScanCommand({
+      new QueryCommand({
         TableName: CELEBRITIES_TABLE_NAME,
+        IndexName: ELO_GSI_NAME,
+        KeyConditionExpression: "rankPartition = :pk",
+        ExpressionAttributeValues: {
+          ":pk": ELO_GSI_PARTITION_VALUE,
+        },
         Limit: pageSize,
         ExclusiveStartKey: exclusiveStartKey,
+        ScanIndexForward: false, // highest elo first
       })
     );
   };
@@ -221,12 +211,8 @@ export async function getRankedCelebritiesPage(params: {
     exclusiveStartKey = lastEvaluatedKey;
   }
 
-  const ordered = ELO_GSI_NAME
-    ? items.slice(0, pageSize) // already sorted by GSI
-    : items.sort((a, b) => (b.elo ?? 1000) - (a.elo ?? 1000)).slice(0, pageSize);
-
   return {
-    items: ordered,
+    items: items.slice(0, pageSize), // already sorted by GSI
     nextCursor: encodeCursor(lastEvaluatedKey),
   };
 }
