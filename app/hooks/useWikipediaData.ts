@@ -29,11 +29,14 @@ export function useWikipediaData({
   useEffect(() => {
     setImgSrc(initialImage || null);
     setBio(initialBio || null);
-  }, [initialImage, initialBio]);
+  }, [initialImage, initialBio, wikipediaPageId]);
 
   // Fetch Wikipedia data if needed
   useEffect(() => {
-    if ((imgSrc && bio) || !wikipediaPageId || loading) return;
+    if (!wikipediaPageId) return;
+    
+    // Don't fetch if we already have both image and bio
+    if (imgSrc && bio) return;
 
     let active = true;
     setLoading(true);
