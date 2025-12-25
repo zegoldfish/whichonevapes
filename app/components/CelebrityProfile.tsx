@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import {
   Box,
@@ -16,87 +16,32 @@ import ThumbUpAltRoundedIcon from "@mui/icons-material/ThumbUpAltRounded";
 import ThumbDownAltRoundedIcon from "@mui/icons-material/ThumbDownAltRounded";
 import BoltRoundedIcon from "@mui/icons-material/BoltRounded";
 import { type Celebrity } from "@/types/celebrity";
-import {
-  getCelebrityWikipediaData,
-  voteConfirmedVaper,
-} from "@/app/actions/celebrities";
 import { getVaperLikelihood } from "@/lib/vaper";
 import { GRADIENTS, COLORS } from "@/lib/theme";
+import { useWikipediaData } from "@/app/hooks/useWikipediaData";
+import { useVaperVoting } from "@/app/hooks/useVaperVoting";
 
 interface CelebrityProfileProps {
   celebrity: Celebrity;
 }
 
 export function CelebrityProfile({ celebrity }: CelebrityProfileProps) {
-  const [imgSrc, setImgSrc] = useState<string | null>(celebrity.image || null);
-  const [bio, setBio] = useState<string | null>(celebrity.bio || null);
-  const [loadingWikiData, setLoadingWikiData] = useState(false);
-  const [vaperVotes, setVaperVotes] = useState({
-    yes: celebrity.confirmedVaperYesVotes ?? 0,
-    no: celebrity.confirmedVaperNoVotes ?? 0,
+  const { imgSrc, bio, loading: loadingWikiData } = useWikipediaData({
+    wikipediaPageId: celebrity.wikipediaPageId,
+    initialImage: celebrity.image,
+    initialBio: celebrity.bio,
   });
-  const [isVotingVaper, setIsVotingVaper] = useState(false);
-  const [vaperVoteError, setVaperVoteError] = useState<string | null>(null);
 
-  useEffect(() => {
-    setImgSrc(celebrity.image || null);
-    setBio(celebrity.bio || null);
-    setVaperVotes({
-      yes: celebrity.confirmedVaperYesVotes ?? 0,
-      no: celebrity.confirmedVaperNoVotes ?? 0,
-    });
-    setVaperVoteError(null);
-  }, [celebrity.id]);
-
-  // Fetch Wikipedia data if needed
-  useEffect(() => {
-    if ((!imgSrc || !bio) && celebrity.wikipediaPageId && !loadingWikiData) {
-      let active = true;
-      setLoadingWikiData(true);
-      getCelebrityWikipediaData(celebrity.wikipediaPageId)
-        .then((data) => {
-          if (!active) return;
-          if (data.image && !imgSrc) {
-            setImgSrc(data.image);
-          }
-          if (data.bio && !bio) {
-            setBio(data.bio);
-          }
-        })
-        .catch((err) => {
-          console.error("Failed to load Wikipedia data:", err);
-        })
-        .finally(() => {
-          if (active) setLoadingWikiData(false);
-        });
-      return () => {
-        active = false;
-      };
-    }
-  }, [celebrity.wikipediaPageId, imgSrc, bio]);
+  const { votes: vaperVotes, isVoting: isVotingVaper, error: vaperVoteError, handleVote } = useVaperVoting({
+    celebrityId: celebrity.id,
+    initialYesVotes: celebrity.confirmedVaperYesVotes,
+    initialNoVotes: celebrity.confirmedVaperNoVotes,
+  });
 
   const { isLikelyVaper, percentage } = getVaperLikelihood(
     vaperVotes.yes,
     vaperVotes.no
   );
-
-  const handleVaperVote = async (isVaper: boolean) => {
-    setIsVotingVaper(true);
-    setVaperVoteError(null);
-    try {
-      const result = await voteConfirmedVaper({
-        celebrityId: celebrity.id,
-        isVaper,
-      });
-      setVaperVotes({ yes: result.yesVotes, no: result.noVotes });
-    } catch (err) {
-      setVaperVoteError(
-        err instanceof Error ? err.message : "Failed to record vote"
-      );
-    } finally {
-      setIsVotingVaper(false);
-    }
-  };
 
   const badgeText = celebrity.confirmedVaper
     ? "Confirmed Vaper"
@@ -321,7 +266,7 @@ export function CelebrityProfile({ celebrity }: CelebrityProfileProps) {
             <Tooltip title="Yes, confirmed vaper" arrow>
               <span>
                 <IconButton
-                  onClick={() => handleVaperVote(true)}
+                  onClick={() => handleVote(true)}
                   disabled={isVotingVaper}
                   sx={{
                     background: "rgba(29,182,168,0.15)",
@@ -342,7 +287,7 @@ export function CelebrityProfile({ celebrity }: CelebrityProfileProps) {
             <Tooltip title="No, not a vaper" arrow>
               <span>
                 <IconButton
-                  onClick={() => handleVaperVote(false)}
+                  onClick={() => handleVote(false)}
                   disabled={isVotingVaper}
                   sx={{
                     background: "rgba(239,71,111,0.12)",
