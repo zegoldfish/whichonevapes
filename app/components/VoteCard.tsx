@@ -22,6 +22,7 @@ import {
   voteConfirmedVaper,
 } from "@/app/actions/celebrities";
 import { getVaperLikelihood } from "@/lib/vaper";
+import { GRADIENTS } from "@/lib/theme";
 
 interface VoteCardProps {
   celebrity: Celebrity;
@@ -137,7 +138,7 @@ export function VoteCard({
           borderRadius: 4,
           overflow: "hidden",
           position: "relative",
-          background: "linear-gradient(145deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02))",
+          background: GRADIENTS.card,
           border: "1px solid rgba(255,255,255,0.08)",
           boxShadow:
             voteState === "winner"
@@ -155,7 +156,7 @@ export function VoteCard({
           transition: "transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease",
         }}
       >
-        <Box sx={{ position: "relative", minHeight: { xs: 260, sm: 320 }, background: "radial-gradient(circle at 20% 20%, rgba(29, 182, 168, 0.12), transparent 40%), radial-gradient(circle at 80% 0%, rgba(239, 71, 111, 0.12), transparent 35%), #0c1220" }}>
+        <Box sx={{ position: "relative", minHeight: { xs: 260, sm: 320 }, background: GRADIENTS.photoSection }}>
           {imgSrc && (
             <Image
               src={imgSrc}
@@ -178,8 +179,7 @@ export function VoteCard({
             sx={{
               position: "absolute",
               inset: 0,
-              background:
-                "linear-gradient(180deg, rgba(5,8,15,0) 0%, rgba(5,8,15,0.15) 35%, rgba(5,8,15,0.85) 100%)",
+              background: GRADIENTS.imageOverlay,
             }}
           />
           {badgeText && (
@@ -194,8 +194,8 @@ export function VoteCard({
                 fontWeight: 700,
                 background:
                   celebrity.confirmedVaper
-                    ? "linear-gradient(135deg, #1DB6A8, #0FB17A)"
-                    : "linear-gradient(135deg, #F7C948, #F2A541)",
+                    ? GRADIENTS.confirmedVaper
+                    : GRADIENTS.likelyVaper,
                 color: "#0b0d14",
                 boxShadow: "0 8px 20px rgba(0,0,0,0.2)",
               }}
@@ -323,13 +323,13 @@ export function VoteCard({
               fontWeight: 800,
               letterSpacing: "0.02em",
               borderRadius: 2.5,
-              background: "linear-gradient(135deg, #1DB6A8 0%, #0FB17A 100%)",
+              background: GRADIENTS.primaryButton,
               color: "#071019",
               boxShadow: "0 12px 28px rgba(15, 177, 122, 0.35)",
               textTransform: "none",
               transition: "transform 0.15s ease, box-shadow 0.15s ease",
               "&:hover": {
-                background: "linear-gradient(135deg, #1ED9C5 0%, #14C48D 100%)",
+                background: GRADIENTS.primaryButtonHover,
                 transform: "translateY(-2px)",
                 boxShadow: "0 16px 32px rgba(15, 177, 122, 0.45)",
               },
