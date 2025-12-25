@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -183,7 +183,7 @@ function RankingsContent() {
 
   const [searchInput, setSearchInput] = useState(initialSearch);
   const [searchQuery, setSearchQuery] = useState(initialSearch);
-  const [celebrities, setCelebrities] = useState<Celebrity[]>([]);
+  const [celebrities, setCelebrities] = useState<Array<Celebrity & { rank: number }>>([]);
   const [nextCursor, setNextCursor] = useState<string | undefined>();
   const [currentCursor, setCurrentCursor] = useState<string | undefined>(initialCursor || undefined);
   const [cursorStack, setCursorStack] = useState<(string | null)[]>([]);
@@ -357,8 +357,8 @@ function RankingsContent() {
               gap: 2.5,
             }}
           >
-            {celebrities.map((celeb, idx) => (
-              <RankingCard key={celeb.id} celeb={celeb} rank={rankOffset + idx + 1} />
+            {celebrities.map((celeb) => (
+              <RankingCard key={celeb.id} celeb={celeb} rank={celeb.rank} />
             ))}
           </Box>
 
@@ -383,5 +383,15 @@ function RankingsContent() {
 }
 
 export default function RankingsPage() {
-  return <RankingsContent />;
+  return (
+    <Suspense fallback={
+      <Container maxWidth="lg" sx={{ py: 6 }}>
+        <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "50vh" }}>
+          <CircularProgress />
+        </Box>
+      </Container>
+    }>
+      <RankingsContent />
+    </Suspense>
+  );
 }

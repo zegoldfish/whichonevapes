@@ -158,7 +158,7 @@ export async function getRankedCelebritiesPage(params: {
   cursor?: string | null;
   search?: string | null;
 }): Promise<{
-  items: Celebrity[];
+  items: Array<Celebrity & { rank: number }>;
   nextCursor?: string;
 }> {
   const schema = z.object({
@@ -171,10 +171,11 @@ export async function getRankedCelebritiesPage(params: {
   const normalizedSearch = search?.trim().toLowerCase() || "";
 
   let exclusiveStartKey = decodeCursor(cursor);
-  const items: Celebrity[] = [];
+  const items: Array<Celebrity & { rank: number }> = [];
   let lastEvaluatedKey: Record<string, unknown> | undefined;
   const MAX_PAGE_FETCHES = 10; // Limit DynamoDB reads to prevent excessive costs
   let pagesFetched = 0;
+  let currentRank = 0; // Track actual rank position in full dataset
 
   const fetchPage = async () => {
     return ddb.send(
@@ -198,11 +199,21 @@ export async function getRankedCelebritiesPage(params: {
     pagesFetched++;
 
     const pageItems = (result.Items || []) as Celebrity[];
-    const filtered = normalizedSearch
-      ? pageItems.filter((item) => item.name?.toLowerCase().includes(normalizedSearch))
-      : pageItems;
-
-    items.push(...filtered);
+    
+    for (const item of pageItems) {
+      currentRank++; // Increment rank for each item in sorted order
+      
+      if (normalizedSearch && !item.name?.toLowerCase().includes(normalizedSearch)) {
+        continue; // Skip items that don't match search
+      }
+      
+      items.push({ ...item, rank: currentRank });
+      
+      if (items.length >= pageSize) {
+        break; // Stop once we have enough matching items
+      }
+    }
+    
     lastEvaluatedKey = result.LastEvaluatedKey as Record<string, unknown> | undefined;
 
     if (!lastEvaluatedKey) {
