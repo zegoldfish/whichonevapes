@@ -13,6 +13,7 @@ import { type Celebrity } from "@/types/celebrity";
 import { voteBetweenCelebrities, getRandomCelebrityPair } from "./actions/celebrities";
 import GameCardSkeleton from "./components/GameCardSkeleton";
 import { VoteCard } from "./components/VoteCard";
+import { COLORS } from "@/lib/theme";
 
 function HomeContent() {
   const [pair, setPair] = useState<{ a: Celebrity; b: Celebrity } | null>(null);
@@ -161,6 +162,13 @@ function HomeContent() {
       handleVote("A"); // Swipe right votes for left card
     }
   };
+
+  // Compute status indicator configuration based on current state
+  const statusConfig = loading
+    ? { color: COLORS.warning.main, text: "Fetching pair..." }
+    : prefetchedPair
+    ? { color: COLORS.primary.main, text: "Next pair cached" }
+    : { color: COLORS.accent.main, text: "Prefetching next pair" };
 
   return (
     <Container maxWidth="lg">
@@ -316,16 +324,12 @@ function HomeContent() {
                 width: 10,
                 height: 10,
                 borderRadius: "50%",
-                background: prefetchedPair ? "#1DB6A8" : loading ? "#F7C948" : "#EF476F",
-                boxShadow: prefetchedPair ? "0 0 12px rgba(29,182,168,0.6)" : "none",
+                background: statusConfig.color,
+                boxShadow: prefetchedPair ? `0 0 12px ${COLORS.primary.main}99` : "none",
               }}
             />
             <Typography component="span">
-              {loading
-                ? "Fetching pair..."
-                : prefetchedPair
-                ? "Next pair cached"
-                : "Prefetching next pair"}
+              {statusConfig.text}
             </Typography>
             {lastLatencyMs !== null && !loading && (
               <Typography component="span" sx={{ color: "rgba(248,249,250,0.55)" }}>
