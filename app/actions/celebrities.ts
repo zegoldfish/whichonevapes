@@ -7,6 +7,7 @@ import {
   BatchGetCommand,
   ScanCommand,
   UpdateCommand,
+  QueryCommand,
 } from "@aws-sdk/lib-dynamodb";
 import {
   type Celebrity,
@@ -183,6 +184,32 @@ export async function getCelebrityById(id: string): Promise<Celebrity | null> {
     cachedCelebrities = [...cachedCelebrities.filter((c) => c.id !== id), celeb];
   }
   return celeb ?? null;
+}
+
+export async function getCelebrityBySlug(slug: string): Promise<Celebrity | null> {
+  // Try cache first
+  const cached = cachedCelebrities.find((c) => c.slug === slug);
+  if (cached) return cached;
+
+  // Query using the GSI on slug
+  const result = await ddb.send(
+    new QueryCommand({
+      TableName: CELEBRITIES_TABLE_NAME,
+      IndexName: "slug-index",
+      KeyConditionExpression: "slug = :slug",
+      ExpressionAttributeValues: {
+        ":slug": slug,
+      },
+      Limit: 1,
+    })
+  );
+
+  const celeb = (result.Items?.[0] || null) as Celebrity | null;
+  if (celeb) {
+    // Update cache entry for future calls
+    cachedCelebrities = [...cachedCelebrities.filter((c) => c.id !== celeb.id), celeb];
+  }
+  return celeb;
 }
 
 // Fetch a random pair of celebrities
