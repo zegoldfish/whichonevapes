@@ -195,7 +195,7 @@ export async function getCelebrityBySlug(slug: string): Promise<Celebrity | null
   const result = await ddb.send(
     new QueryCommand({
       TableName: CELEBRITIES_TABLE_NAME,
-      IndexName: "slug-index",
+      IndexName: "slug",
       KeyConditionExpression: "slug = :slug",
       ExpressionAttributeValues: {
         ":slug": slug,
