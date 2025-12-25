@@ -10,7 +10,6 @@ import {
   Chip,
   IconButton,
   Tooltip,
-  CircularProgress,
   Skeleton,
 } from "@mui/material";
 import ThumbUpAltRoundedIcon from "@mui/icons-material/ThumbUpAltRounded";

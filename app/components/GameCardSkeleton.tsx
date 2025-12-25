@@ -35,9 +35,11 @@ export default function GameCardSkeleton({ position = "left" }: Props) {
         {/* Image area */}
         <Skeleton
           variant="rectangular"
-          height={{ xs: 260, sm: 320, md: 380 }}
           animation="wave"
-          sx={{ bgcolor: "rgba(255, 255, 255, 0.06)" }}
+          sx={{
+            height: { xs: 260, sm: 320, md: 380 },
+            bgcolor: "rgba(255, 255, 255, 0.06)",
+          }}
         />
 
         <CardContent sx={{ position: "relative", zIndex: 1, p: 3 }}>
