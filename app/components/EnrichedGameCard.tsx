@@ -1,42 +1,26 @@
 "use client";
 
-import { useState, useEffect, type MouseEvent } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import {
   Card,
   CardContent,
-  Button,
   Box,
-  CircularProgress,
   Typography,
   Skeleton,
-  IconButton,
-  Tooltip,
 } from "@mui/material";
-import ThumbUpIcon from "@mui/icons-material/ThumbUp";
-import ThumbDownIcon from "@mui/icons-material/ThumbDown";
 import { type Celebrity } from "@/types/celebrity";
-import { getCelebrityWikipediaData, voteConfirmedVaper } from "@/app/actions/celebrities";
+import { getCelebrityWikipediaData } from "@/app/actions/celebrities";
 import { getVaperLikelihood } from "@/lib/vaper";
 
 interface EnrichedGameCardProps {
   celebrity: Celebrity;
-  onVote: () => void;
-  isVoting: boolean;
-  position: "left" | "right";
-  voteState?: "winner" | "loser" | null;
-  readOnly?: boolean;
 }
 
 export function EnrichedGameCard({
   celebrity,
-  onVote,
-  isVoting,
-  position,
-  voteState = null,
-  readOnly = false,
 }: EnrichedGameCardProps) {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true);
   const [wikiData, setWikiData] = useState<{
     bio: string | null;
     image: string | null;
@@ -44,30 +28,18 @@ export function EnrichedGameCard({
   const [loadingImage, setLoadingImage] = useState(false);
   const [loadingBio, setLoadingBio] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [vaperVotes, setVaperVotes] = useState({
-    yes: celebrity.confirmedVaperYesVotes ?? 0,
-    no: celebrity.confirmedVaperNoVotes ?? 0,
-  });
-  const [isVotingVaper, setIsVotingVaper] = useState(false);
-  const [vaperVoteError, setVaperVoteError] = useState<string | null>(null);
 
   // Reset local state when the celebrity changes to avoid stale data
   useEffect(() => {
-    setExpanded(false);
     setWikiData(null);
     setError(null);
     setLoadingImage(false);
     setLoadingBio(false);
-    setVaperVotes({
-      yes: celebrity.confirmedVaperYesVotes ?? 0,
-      no: celebrity.confirmedVaperNoVotes ?? 0,
-    });
-    setVaperVoteError(null);
-  }, [celebrity.id, celebrity.confirmedVaperYesVotes, celebrity.confirmedVaperNoVotes]);
+  }, [celebrity.id]);
 
   const confirmed = Boolean((celebrity as any).confirmedVaper);
 
-  // Fetch Wikipedia image automatically on mount if not already available
+  // Fetch Wikipedia image and bio automatically on mount
   useEffect(() => {
     if (!celebrity.image && celebrity.wikipediaPageId && !loadingImage && !wikiData) {
       setLoadingImage(true);
@@ -82,101 +54,38 @@ export function EnrichedGameCard({
           setLoadingImage(false);
         });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [celebrity.id, celebrity.image, celebrity.wikipediaPageId]);
 
+  // Fetch bio on mount if not available
   useEffect(() => {
-    if (readOnly) {
-      setExpanded(true);
-      if (
-        !celebrity.bio &&
-        !wikiData?.bio &&
-        !loadingBio &&
-        celebrity.wikipediaPageId
-      ) {
-        setLoadingBio(true);
-        setError(null);
-        getCelebrityWikipediaData(celebrity.wikipediaPageId)
-          .then((data) => {
-            setWikiData((prev) => ({
-              image: prev?.image || data.image,
-              bio: data.bio,
-            }));
-          })
-          .catch((err) => {
-            setError("Failed to load Wikipedia data");
-            console.error(err);
-          })
-          .finally(() => {
-            setLoadingBio(false);
-          });
-      }
-    }
-  }, [celebrity.bio, celebrity.wikipediaPageId, readOnly]);
-
-  // Fetch bio only when card is expanded
-  const handleCardClick = async () => {
-    if (readOnly) return;
-    if (
-      !expanded &&
-      !celebrity.bio &&
-      !wikiData?.bio &&
-      !loadingBio &&
-      !loadingImage &&
-      celebrity.wikipediaPageId
-    ) {
+    if (!celebrity.bio && !wikiData?.bio && !loadingBio && celebrity.wikipediaPageId) {
       setLoadingBio(true);
       setError(null);
-      try {
-        const data = await getCelebrityWikipediaData(celebrity.wikipediaPageId);
-        setWikiData((prev) => ({
-          image: prev?.image || data.image,
-          bio: data.bio,
-        }));
-      } catch (err) {
-        setError("Failed to load Wikipedia data");
-        console.error(err);
-      } finally {
-        setLoadingBio(false);
-      }
+      getCelebrityWikipediaData(celebrity.wikipediaPageId)
+        .then((data) => {
+          setWikiData((prev) => ({
+            image: prev?.image || data.image,
+            bio: data.bio,
+          }));
+        })
+        .catch((err) => {
+          setError("Failed to load Wikipedia data");
+          console.error(err);
+        })
+        .finally(() => {
+          setLoadingBio(false);
+        });
     }
-    setExpanded((prev) => !prev);
-  };
+  }, [celebrity.bio, celebrity.wikipediaPageId]);
 
   // Use existing data if available, otherwise use fetched data
   const displayImage = celebrity.image || wikiData?.image;
   const displayBio = celebrity.bio || wikiData?.bio;
 
-  const handleVaperVote = async (isVaper: boolean) => {
-    setIsVotingVaper(true);
-    setVaperVoteError(null);
-    try {
-      const result = await voteConfirmedVaper({
-        celebrityId: celebrity.id,
-        isVaper,
-      });
-      setVaperVotes({
-        yes: result.yesVotes,
-        no: result.noVotes,
-      });
-    } catch (err) {
-      setVaperVoteError(err instanceof Error ? err.message : "Failed to vote");
-    } finally {
-      setIsVotingVaper(false);
-    }
-  };
-
-  const handlePrimaryVoteClick = (e: MouseEvent<HTMLButtonElement>) => {
-    e.stopPropagation();
-    onVote();
-  };
-
-  const handleVaperVoteClick = (isVaper: boolean) => (e: MouseEvent<HTMLButtonElement>) => {
-    e.stopPropagation();
-    handleVaperVote(isVaper);
-  };
-
-  const { isLikelyVaper } = getVaperLikelihood(vaperVotes.yes, vaperVotes.no);
+  const { isLikelyVaper } = getVaperLikelihood(
+    celebrity.confirmedVaperYesVotes ?? 0,
+    celebrity.confirmedVaperNoVotes ?? 0
+  );
 
   return (
     <Box
@@ -193,7 +102,6 @@ export function EnrichedGameCard({
           maxWidth: { xs: 360, sm: 380, md: 400 },
           width: "100%",
           margin: "0 auto",
-          cursor: readOnly ? "default" : "pointer",
           transition: "all 0.25s ease",
           background: "rgba(255, 255, 255, 0.03)",
           backdropFilter: "blur(10px)",
@@ -201,19 +109,7 @@ export function EnrichedGameCard({
           borderRadius: 3,
           overflow: "hidden",
           position: "relative",
-          boxShadow:
-            voteState === "winner"
-              ? "0 0 0 2px rgba(76, 175, 80, 0.7), 0 16px 40px rgba(76, 175, 80, 0.25)"
-              : voteState === "loser"
-              ? "inset 0 0 120px rgba(0,0,0,0.35)"
-              : "0 0 0 rgba(0,0,0,0)",
-          transform:
-            voteState === "winner"
-              ? "translateY(-6px) scale(1.02)"
-              : voteState === "loser"
-              ? "translateY(0) scale(0.98)"
-              : undefined,
-          opacity: voteState === "loser" ? 0.7 : 1,
+          boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1)",
           "&::before": {
             content: '""',
             position: "absolute",
@@ -222,25 +118,11 @@ export function EnrichedGameCard({
             right: 0,
             bottom: 0,
             background: "linear-gradient(135deg, rgba(123, 44, 191, 0.1) 0%, rgba(199, 21, 133, 0.1) 100%)",
-            opacity: 0,
-            transition: "opacity 0.4s ease",
+            opacity: 1,
             pointerEvents: "none",
             zIndex: 0,
           },
-          "&:hover": readOnly
-            ? undefined
-            : {
-                transform: "translateY(-8px) scale(1.02)",
-                boxShadow: "0 20px 40px rgba(123, 44, 191, 0.3), 0 0 40px rgba(199, 21, 133, 0.2)",
-                border: "1px solid rgba(123, 44, 191, 0.4)",
-                "&::before": {
-                  opacity: 1,
-                },
-              },
         }}
-        onClick={readOnly ? undefined : handleCardClick}
-        aria-pressed={readOnly ? undefined : expanded}
-        role={readOnly ? undefined : "button"}
       >
         {loadingImage && !displayImage ? (
           <Skeleton 
@@ -265,7 +147,6 @@ export function EnrichedGameCard({
                 maxHeight: 420,
                 minHeight: 280,
               }}
-              priority={position === "left"}
             />
             {confirmed && (
               <Box
@@ -394,7 +275,6 @@ export function EnrichedGameCard({
               ) : null}
             </>
           )}
-          
           <Box
             sx={{
               display: "flex",
@@ -450,164 +330,8 @@ export function EnrichedGameCard({
             </Box>
           </Box>
           
-          {/* Confirmed Vaper Voting Section */}
-          <Box
-            sx={{
-              mt: 3,
-              pt: 3,
-              borderTop: "1px solid rgba(255, 255, 255, 0.1)",
-            }}
-          >
-            <Typography 
-              variant="caption" 
-              sx={{ 
-                color: "rgba(248, 249, 250, 0.5)",
-                textTransform: "uppercase",
-                letterSpacing: "0.1em",
-                fontSize: "0.7rem",
-                display: "block",
-                mb: 2,
-                textAlign: "center",
-              }}
-            >
-              Confirmed Vaper?
-            </Typography>
-            
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                gap: 3,
-              }}
-            >
-              <Tooltip title="Yes, confirmed vaper" arrow>
-                <Box sx={{ textAlign: "center" }}>
-                  <IconButton
-                    onClick={handleVaperVoteClick(true)}
-                    disabled={isVotingVaper}
-                    sx={{
-                      background: "linear-gradient(135deg, rgba(76, 175, 80, 0.2) 0%, rgba(56, 142, 60, 0.2) 100%)",
-                      border: "1px solid rgba(76, 175, 80, 0.3)",
-                      transition: "all 0.3s ease",
-                      "&:hover": {
-                        background: "linear-gradient(135deg, rgba(76, 175, 80, 0.4) 0%, rgba(56, 142, 60, 0.4) 100%)",
-                        transform: "translateY(-2px)",
-                        boxShadow: "0 6px 16px rgba(76, 175, 80, 0.4)",
-                      },
-                      "&:disabled": {
-                        opacity: 0.5,
-                      },
-                    }}
-                  >
-                    <ThumbUpIcon sx={{ color: "#4CAF50" }} />
-                  </IconButton>
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      mt: 1,
-                      fontWeight: 700,
-                      color: "#4CAF50",
-                    }}
-                  >
-                    {vaperVotes.yes}
-                  </Typography>
-                </Box>
-              </Tooltip>
-              
-              <Tooltip title="No, not a vaper" arrow>
-                <Box sx={{ textAlign: "center" }}>
-                  <IconButton
-                    onClick={handleVaperVoteClick(false)}
-                    disabled={isVotingVaper}
-                    sx={{
-                      background: "linear-gradient(135deg, rgba(244, 67, 54, 0.2) 0%, rgba(211, 47, 47, 0.2) 100%)",
-                      border: "1px solid rgba(244, 67, 54, 0.3)",
-                      transition: "all 0.3s ease",
-                      "&:hover": {
-                        background: "linear-gradient(135deg, rgba(244, 67, 54, 0.4) 0%, rgba(211, 47, 47, 0.4) 100%)",
-                        transform: "translateY(-2px)",
-                        boxShadow: "0 6px 16px rgba(244, 67, 54, 0.4)",
-                      },
-                      "&:disabled": {
-                        opacity: 0.5,
-                      },
-                    }}
-                  >
-                    <ThumbDownIcon sx={{ color: "#F44336" }} />
-                  </IconButton>
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      mt: 1,
-                      fontWeight: 700,
-                      color: "#F44336",
-                    }}
-                  >
-                    {vaperVotes.no}
-                  </Typography>
-                </Box>
-              </Tooltip>
-            </Box>
-            
-            {vaperVoteError && (
-              <Typography
-                variant="caption"
-                sx={{
-                  display: "block",
-                  mt: 2,
-                  color: "#F44336",
-                  textAlign: "center",
-                }}
-              >
-                {vaperVoteError}
-              </Typography>
-            )}
-          </Box>
-          
         </CardContent>
       </Card>
-      
-      {!readOnly && (
-        <Button
-          variant="contained"
-          onClick={handlePrimaryVoteClick}
-          disabled={isVoting}
-          sx={{
-            mt: 3,
-            py: 1.2,
-            px: 2.5,
-            fontSize: "0.875rem",
-            fontWeight: 700,
-            borderRadius: 3,
-            alignSelf: "center",
-            width: "fit-content",
-            background: "linear-gradient(135deg, #7B2CBF 0%, #C71585 100%)",
-            boxShadow: "0 8px 20px rgba(123, 44, 191, 0.4)",
-            transition: "all 0.3s ease",
-            textTransform: "none",
-            letterSpacing: "0.05em",
-            "&:hover": {
-              background: "linear-gradient(135deg, #9333EA 0%, #E91E8C 100%)",
-              transform: "translateY(-2px)",
-              boxShadow: "0 12px 30px rgba(199, 21, 133, 0.6)",
-            },
-            "&:active": {
-              transform: "translateY(0px)",
-            },
-            "&:disabled": {
-              background: "rgba(123, 44, 191, 0.3)",
-              color: "rgba(248, 249, 250, 0.5)",
-            },
-          }}
-        >
-          {isVoting ? (
-            <CircularProgress size={24} color="inherit" />
-          ) : (
-            "More Likely to Vape"
-          )}
-        </Button>
-      )}
     </Box>
   );
 }

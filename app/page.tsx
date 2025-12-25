@@ -189,7 +189,7 @@ function HomeContent() {
               letterSpacing: "0.01em",
             }}
           >
-            Pick the celebrity more likely to vape. Fast, clean, one tap.
+            Pick the celebrity more likely to vape.
           </Typography>
           <Stack direction="row" justifyContent="center" spacing={2} sx={{ mt: 2 }}>
             <Button
