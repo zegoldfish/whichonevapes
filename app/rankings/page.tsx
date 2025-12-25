@@ -186,7 +186,7 @@ function RankingsContent() {
   const [celebrities, setCelebrities] = useState<Celebrity[]>([]);
   const [nextCursor, setNextCursor] = useState<string | undefined>();
   const [currentCursor, setCurrentCursor] = useState<string | undefined>(initialCursor || undefined);
-  const [cursorStack, setCursorStack] = useState<string[]>([]);
+  const [cursorStack, setCursorStack] = useState<(string | null)[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -211,7 +211,7 @@ function RankingsContent() {
     router.replace(query ? `/rankings?${query}` : "/rankings", { scroll: false });
   };
 
-  const loadPage = (cursor: string | null, stack: string[]) => {
+  const loadPage = (cursor: string | null, stack: (string | null)[]) => {
     setLoading(true);
     setError(null);
     startTransition(async () => {
@@ -246,7 +246,7 @@ function RankingsContent() {
 
   const handleNext = () => {
     if (!nextCursor) return;
-    const newStack = currentCursor ? [...cursorStack, currentCursor] : cursorStack;
+    const newStack = [...cursorStack, currentCursor ?? null];
     loadPage(nextCursor, newStack);
   };
 
