@@ -247,15 +247,15 @@ function RankingsContent() {
 
   const handleNext = () => {
     if (!nextCursor) return;
-    const newStack = [...cursorStack, currentCursor ?? ""];
+    const newStack = currentCursor ? [...cursorStack, currentCursor] : cursorStack;
     loadPage(nextCursor, newStack);
   };
 
   const handlePrev = () => {
-    if (cursorStack.length === 0) return;
+    if (cursorStack.length === 0 && !currentCursor) return;
     const newStack = [...cursorStack];
-    const prevCursor = newStack.pop();
-    loadPage(prevCursor && prevCursor.length > 0 ? prevCursor : null, newStack);
+    const prevCursor = newStack.pop() || null;
+    loadPage(prevCursor, newStack);
   };
 
   return (
