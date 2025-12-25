@@ -9,7 +9,6 @@ import {
   Chip,
   CircularProgress,
   Container,
-  Grid2,
   InputAdornment,
   Skeleton,
   TextField,
@@ -321,20 +320,25 @@ function RankingsContent() {
       )}
 
       {isLoading && celebrities.length === 0 ? (
-        <Grid2 container spacing={2.5}>
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", md: "repeat(3, 1fr)" },
+            gap: 2.5,
+          }}
+        >
           {Array.from({ length: 8 }).map((_, idx) => (
-            <Grid2 size={{ xs: 12, sm: 6, md: 4 }} key={idx}>
-              <Skeleton
-                variant="rectangular"
-                height={180}
-                sx={{
-                  borderRadius: 3,
-                  background: "rgba(255,255,255,0.05)",
-                }}
-              />
-            </Grid2>
+            <Skeleton
+              key={idx}
+              variant="rectangular"
+              height={180}
+              sx={{
+                borderRadius: 3,
+                background: "rgba(255,255,255,0.05)",
+              }}
+            />
           ))}
-        </Grid2>
+        </Box>
       ) : celebrities.length === 0 ? (
         <Box sx={{ py: 10, textAlign: "center", color: COLORS.text.muted }}>
           <Typography variant="h6">No celebrities found</Typography>
@@ -342,13 +346,17 @@ function RankingsContent() {
         </Box>
       ) : (
         <>
-          <Grid2 container spacing={2.5}>
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", md: "repeat(3, 1fr)" },
+              gap: 2.5,
+            }}
+          >
             {celebrities.map((celeb, idx) => (
-              <Grid2 size={{ xs: 12, sm: 6, md: 4 }} key={celeb.id}>
-                <RankingCard celeb={celeb} rank={rankOffset + idx + 1} />
-              </Grid2>
+              <RankingCard key={celeb.id} celeb={celeb} rank={rankOffset + idx + 1} />
             ))}
-          </Grid2>
+          </Box>
 
           <RankingsPagination
             page={page}
