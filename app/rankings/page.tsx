@@ -9,7 +9,7 @@ import {
   Chip,
   CircularProgress,
   Container,
-  Grid,
+  Grid2,
   InputAdornment,
   Skeleton,
   TextField,
@@ -321,9 +321,9 @@ function RankingsContent() {
       )}
 
       {isLoading && celebrities.length === 0 ? (
-        <Grid container spacing={2.5}>
+        <Grid2 container spacing={2.5}>
           {Array.from({ length: 8 }).map((_, idx) => (
-            <Grid item xs={12} sm={6} md={4} key={idx}>
+            <Grid2 size={{ xs: 12, sm: 6, md: 4 }} key={idx}>
               <Skeleton
                 variant="rectangular"
                 height={180}
@@ -332,9 +332,9 @@ function RankingsContent() {
                   background: "rgba(255,255,255,0.05)",
                 }}
               />
-            </Grid>
+            </Grid2>
           ))}
-        </Grid>
+        </Grid2>
       ) : celebrities.length === 0 ? (
         <Box sx={{ py: 10, textAlign: "center", color: COLORS.text.muted }}>
           <Typography variant="h6">No celebrities found</Typography>
@@ -342,13 +342,13 @@ function RankingsContent() {
         </Box>
       ) : (
         <>
-          <Grid container spacing={2.5}>
+          <Grid2 container spacing={2.5}>
             {celebrities.map((celeb, idx) => (
-              <Grid item xs={12} sm={6} md={4} key={celeb.id}>
+              <Grid2 size={{ xs: 12, sm: 6, md: 4 }} key={celeb.id}>
                 <RankingCard celeb={celeb} rank={rankOffset + idx + 1} />
-              </Grid>
+              </Grid2>
             ))}
-          </Grid>
+          </Grid2>
 
           <RankingsPagination
             page={page}
