@@ -172,6 +172,8 @@ export async function getRankedCelebritiesPage(params: {
   let exclusiveStartKey = decodeCursor(cursor);
   const items: Celebrity[] = [];
   let lastEvaluatedKey: Record<string, unknown> | undefined;
+  const MAX_PAGE_FETCHES = 10; // Limit DynamoDB reads to prevent excessive costs
+  let pagesFetched = 0;
 
   const fetchPage = async () => {
     if (ELO_GSI_NAME) {
@@ -200,8 +202,9 @@ export async function getRankedCelebritiesPage(params: {
   };
 
   // Keep fetching until we have enough items (or exhaust table)
-  while (items.length < pageSize) {
+  while (items.length < pageSize && pagesFetched < MAX_PAGE_FETCHES) {
     const result = await fetchPage();
+    pagesFetched++;
 
     const pageItems = (result.Items || []) as Celebrity[];
     const filtered = normalizedSearch
