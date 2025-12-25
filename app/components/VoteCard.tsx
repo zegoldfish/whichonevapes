@@ -39,6 +39,7 @@ export function VoteCard({
   voteState = null,
 }: VoteCardProps) {
   const [imgSrc, setImgSrc] = useState<string | null>(celebrity.image || null);
+  const [bio, setBio] = useState<string | null>(celebrity.bio || null);
   const [loadingImg, setLoadingImg] = useState(false);
   const [vaperVotes, setVaperVotes] = useState({
     yes: celebrity.confirmedVaperYesVotes ?? 0,
@@ -49,15 +50,16 @@ export function VoteCard({
 
   useEffect(() => {
     setImgSrc(celebrity.image || null);
+    setBio(celebrity.bio || null);
     setVaperVotes({
       yes: celebrity.confirmedVaperYesVotes ?? 0,
       no: celebrity.confirmedVaperNoVotes ?? 0,
     });
     setVaperVoteError(null);
-  }, [celebrity.id, celebrity.image, celebrity.confirmedVaperYesVotes, celebrity.confirmedVaperNoVotes]);
+  }, [celebrity.id, celebrity.image, celebrity.bio, celebrity.confirmedVaperYesVotes, celebrity.confirmedVaperNoVotes]);
 
   useEffect(() => {
-    if (imgSrc || !celebrity.wikipediaPageId) return;
+    if ((imgSrc && bio) || !celebrity.wikipediaPageId) return;
     let active = true;
     setLoadingImg(true);
     getCelebrityWikipediaData(celebrity.wikipediaPageId)
@@ -65,6 +67,9 @@ export function VoteCard({
         if (!active) return;
         if (data.image) {
           setImgSrc(data.image);
+        }
+        if (data.bio) {
+          setBio(data.bio);
         }
       })
       .catch(() => {})
@@ -74,7 +79,7 @@ export function VoteCard({
     return () => {
       active = false;
     };
-  }, [celebrity.wikipediaPageId, imgSrc]);
+  }, [celebrity.wikipediaPageId, imgSrc, bio]);
 
   const { isLikelyVaper, percentage } = getVaperLikelihood(
     vaperVotes.yes,
@@ -210,6 +215,44 @@ export function VoteCard({
             </Box>
           )}
         </Box>
+
+        {bio && (
+          <Box
+            sx={{
+              maxHeight: 120,
+              overflowY: "auto",
+              px: 3,
+              pt: 2,
+              pb: 1,
+              background: "rgba(0, 0, 0, 0.25)",
+              borderBottom: "1px solid rgba(255,255,255,0.06)",
+              "&::-webkit-scrollbar": {
+                width: "6px",
+              },
+              "&::-webkit-scrollbar-track": {
+                background: "rgba(0, 0, 0, 0.2)",
+              },
+              "&::-webkit-scrollbar-thumb": {
+                background: "rgba(255, 255, 255, 0.2)",
+                borderRadius: "3px",
+                "&:hover": {
+                  background: "rgba(255, 255, 255, 0.3)",
+                },
+              },
+            }}
+          >
+            <Typography
+              variant="body2"
+              sx={{
+                color: "rgba(248, 249, 250, 0.85)",
+                lineHeight: 1.6,
+                fontSize: "0.875rem",
+              }}
+            >
+              {bio}
+            </Typography>
+          </Box>
+        )}
 
         <CardContent sx={{ p: 3 }}>
           <Typography
