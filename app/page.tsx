@@ -67,16 +67,6 @@ function HomeContent() {
     fetchPair();
   }, []);
 
-  // Capture ?admin=CODE and store locally for admin actions
-  useEffect(() => {
-    try {
-      const code = searchParams?.get("admin");
-      if (code) {
-        localStorage.setItem("adminCode", code);
-      }
-    } catch {}
-  }, [searchParams]);
-
   // Keyboard navigation
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
