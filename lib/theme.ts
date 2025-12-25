@@ -44,6 +44,8 @@ export const COLORS = {
   },
   background: {
     dark: "#0c1220",
+    darkText: "#0b0d14",
+    darkTextAlt: "#071019",
     overlay: "rgba(0, 0, 0, 0.25)",
   },
   text: {

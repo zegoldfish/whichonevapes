@@ -18,7 +18,7 @@ import ThumbDownAltRoundedIcon from "@mui/icons-material/ThumbDownAltRounded";
 import BoltRoundedIcon from "@mui/icons-material/BoltRounded";
 import { type Celebrity } from "@/types/celebrity";
 import { getVaperLikelihood } from "@/lib/vaper";
-import { GRADIENTS } from "@/lib/theme";
+import { GRADIENTS, COLORS } from "@/lib/theme";
 import { useWikipediaData } from "@/app/hooks/useWikipediaData";
 import { useVaperVoting } from "@/app/hooks/useVaperVoting";
 
@@ -133,7 +133,7 @@ export function VoteCard({
           />
           {badgeText && (
             <Chip
-              icon={<BoltRoundedIcon sx={{ color: "#0b0d14" }} />}
+              icon={<BoltRoundedIcon sx={{ color: COLORS.background.darkText }} />}
               label={badgeText}
               size="small"
               sx={{
@@ -145,7 +145,7 @@ export function VoteCard({
                   celebrity.confirmedVaper
                     ? GRADIENTS.confirmedVaper
                     : GRADIENTS.likelyVaper,
-                color: "#0b0d14",
+                color: COLORS.background.darkText,
                 boxShadow: "0 8px 20px rgba(0,0,0,0.2)",
               }}
             />
@@ -273,7 +273,7 @@ export function VoteCard({
               letterSpacing: "0.02em",
               borderRadius: 2.5,
               background: GRADIENTS.primaryButton,
-              color: "#071019",
+              color: COLORS.background.darkTextAlt,
               boxShadow: "0 12px 28px rgba(15, 177, 122, 0.35)",
               textTransform: "none",
               transition: "transform 0.15s ease, box-shadow 0.15s ease",
@@ -332,7 +332,7 @@ export function VoteCard({
                       "&:hover": { background: "rgba(29,182,168,0.25)" },
                     }}
                   >
-                    <ThumbUpAltRoundedIcon sx={{ color: "#1DB6A8" }} />
+                    <ThumbUpAltRoundedIcon sx={{ color: COLORS.primary.main }} />
                   </IconButton>
                 </span>
               </Tooltip>
@@ -353,7 +353,7 @@ export function VoteCard({
                       "&:hover": { background: "rgba(239,71,111,0.22)" },
                     }}
                   >
-                    <ThumbDownAltRoundedIcon sx={{ color: "#EF476F" }} />
+                    <ThumbDownAltRoundedIcon sx={{ color: COLORS.accent.main }} />
                   </IconButton>
                 </span>
               </Tooltip>
@@ -363,7 +363,7 @@ export function VoteCard({
                 variant="caption"
                 sx={{
                   display: "block",
-                  color: "#EF476F",
+                color: COLORS.accent.main,
                   mt: 1,
                 }}
               >
