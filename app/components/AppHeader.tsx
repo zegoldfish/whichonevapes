@@ -83,6 +83,26 @@ export function AppHeader() {
           >
             Rankings
           </Button>
+          <Button
+            component={Link}
+            href="/about"
+            variant="text"
+            sx={{
+              color: "var(--text)",
+              fontWeight: 600,
+              textTransform: "none",
+              px: 2,
+              py: 1,
+              borderRadius: 2,
+              transition: "all 0.3s ease",
+              "&:hover": {
+                background: "rgba(255, 0, 110, 0.15)",
+                transform: "translateY(-2px)",
+              },
+            }}
+          >
+            About
+          </Button>
         </Stack>
       </Toolbar>
     </AppBar>
