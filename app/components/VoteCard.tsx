@@ -56,7 +56,7 @@ export function VoteCard({
       no: celebrity.confirmedVaperNoVotes ?? 0,
     });
     setVaperVoteError(null);
-  }, [celebrity.id, celebrity.image, celebrity.bio, celebrity.confirmedVaperYesVotes, celebrity.confirmedVaperNoVotes]);
+  }, [celebrity.id]);
 
   useEffect(() => {
     if ((imgSrc && bio) || !celebrity.wikipediaPageId) return;
