@@ -19,7 +19,8 @@ export default function GameCardSkeleton({ position = "left" }: Props) {
     >
       <Card
         sx={{
-          maxWidth: 400,
+          maxWidth: { xs: 360, sm: 380, md: 400 },
+          width: "100%",
           margin: "0 auto",
           transition: "all 0.25s ease",
           background: "rgba(255, 255, 255, 0.03)",
@@ -33,7 +34,7 @@ export default function GameCardSkeleton({ position = "left" }: Props) {
         {/* Image area */}
         <Skeleton
           variant="rectangular"
-          height={400}
+          height={{ xs: 320, sm: 360, md: 400 }}
           animation="wave"
           sx={{ bgcolor: "rgba(255, 255, 255, 0.06)" }}
         />

@@ -190,7 +190,8 @@ export function EnrichedGameCard({
     >
       <Card
         sx={{
-          maxWidth: 400,
+          maxWidth: { xs: 360, sm: 380, md: 400 },
+          width: "100%",
           margin: "0 auto",
           cursor: readOnly ? "default" : "pointer",
           transition: "all 0.25s ease",
@@ -260,9 +261,9 @@ export function EnrichedGameCard({
               style={{
                 objectFit: "cover",
                 width: "100%",
-                height: "auto",
-                minHeight: "400px",
-                maxHeight: "400px",
+                height: "55vh",
+                maxHeight: 420,
+                minHeight: 280,
               }}
               priority={position === "left"}
             />

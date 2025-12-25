@@ -253,6 +253,14 @@ function HomeContent() {
           sx={{
             minHeight: "60vh",
             animation: "slideUp 0.6s ease-out",
+            overflowX: { xs: "auto", md: "visible" },
+            scrollSnapType: { xs: "x mandatory", md: "none" },
+            gridAutoFlow: { xs: "column", md: "row" },
+            gridAutoColumns: { xs: "88vw", sm: "320px", md: "unset" },
+            px: { xs: 1, md: 0 },
+            "& > .MuiGrid2-root": {
+              scrollSnapAlign: { xs: "center", md: "unset" },
+            },
             "@keyframes slideUp": {
               from: { opacity: 0, transform: "translateY(30px)" },
               to: { opacity: 1, transform: "translateY(0)" },
