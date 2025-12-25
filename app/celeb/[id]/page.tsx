@@ -26,24 +26,37 @@ export default async function CelebrityPage({
   }
 
   return (
-    <Container maxWidth="sm" sx={{ py: 6 }}>
-      <Box sx={{ textAlign: "center", mb: 4 }}>
-        <Typography
-          variant="h4"
-          sx={{
-            fontWeight: 800,
-            mb: 1,
-            background: "linear-gradient(135deg, #7B2CBF 0%, #C71585 50%, #FF006E 100%)",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-            backgroundClip: "text",
-          }}
-        >
-          {celeb.name}
-        </Typography>
-      </Box>
+    <Container maxWidth="sm" sx={{ py: { xs: 4, md: 6 } }}>
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+        <Box sx={{ textAlign: "center" }}>
+          <Typography
+            variant="h3"
+            sx={{
+              fontWeight: 800,
+              mb: 1.5,
+              fontSize: { xs: "2rem", md: "2.5rem" },
+              background: "linear-gradient(135deg, #1DB6A8 0%, #EF476F 100%)",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              backgroundClip: "text",
+              letterSpacing: "-0.02em",
+            }}
+          >
+            {celeb.name}
+          </Typography>
+          <Typography
+            variant="body1"
+            sx={{
+              color: "rgba(248, 249, 250, 0.75)",
+              fontWeight: 500,
+            }}
+          >
+            Celebrity Profile
+          </Typography>
+        </Box>
 
-      <ClientCelebrityCard celebrity={celeb} />
+        <ClientCelebrityCard celebrity={celeb} />
+      </Box>
     </Container>
   );
 }
