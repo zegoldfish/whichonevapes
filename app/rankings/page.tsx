@@ -255,7 +255,7 @@ function RankingsContent() {
   };
 
   const handlePrev = () => {
-    if (cursorStack.length === 0 && !currentCursor) return;
+    if (cursorStack.length === 0) return;
     const newStack = [...cursorStack];
     const prevCursor = newStack.pop() || null;
     loadPage(prevCursor, newStack);
