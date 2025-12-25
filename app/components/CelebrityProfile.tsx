@@ -22,6 +22,7 @@ import {
   voteConfirmedVaper,
 } from "@/app/actions/celebrities";
 import { getVaperLikelihood } from "@/lib/vaper";
+import { GRADIENTS, COLORS } from "@/lib/theme";
 
 interface CelebrityProfileProps {
   celebrity: Celebrity;
@@ -112,13 +113,13 @@ export function CelebrityProfile({ celebrity }: CelebrityProfileProps) {
         margin: "0 auto",
         borderRadius: 4,
         overflow: "hidden",
-        background: "linear-gradient(145deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02))",
-        border: "1px solid rgba(255,255,255,0.08)",
+        background: GRADIENTS.card,
+        border: `1px solid ${COLORS.border.light}`,
         boxShadow: "0 16px 40px rgba(0, 0, 0, 0.35)",
       }}
     >
       {/* Image Section */}
-      <Box sx={{ position: "relative", minHeight: { xs: 280, sm: 360 }, background: "radial-gradient(circle at 20% 20%, rgba(29, 182, 168, 0.12), transparent 40%), radial-gradient(circle at 80% 0%, rgba(239, 71, 111, 0.12), transparent 35%), #0c1220" }}>
+      <Box sx={{ position: "relative", minHeight: { xs: 280, sm: 360 }, background: GRADIENTS.photoSection }}>
         {loadingWikiData && !imgSrc ? (
           <Skeleton 
             variant="rectangular" 
@@ -149,8 +150,7 @@ export function CelebrityProfile({ celebrity }: CelebrityProfileProps) {
               sx={{
                 position: "absolute",
                 inset: 0,
-                background:
-                  "linear-gradient(180deg, rgba(5,8,15,0) 0%, rgba(5,8,15,0.15) 35%, rgba(5,8,15,0.85) 100%)",
+                background: GRADIENTS.imageOverlay,
               }}
             />
           </>
@@ -180,8 +180,8 @@ export function CelebrityProfile({ celebrity }: CelebrityProfileProps) {
               fontWeight: 700,
               background:
                 celebrity.confirmedVaper
-                  ? "linear-gradient(135deg, #1DB6A8, #0FB17A)"
-                  : "linear-gradient(135deg, #F7C948, #F2A541)",
+                  ? GRADIENTS.confirmedVaper
+                  : GRADIENTS.likelyVaper,
               color: "#0b0d14",
               boxShadow: "0 8px 20px rgba(0,0,0,0.2)",
             }}
@@ -205,7 +205,7 @@ export function CelebrityProfile({ celebrity }: CelebrityProfileProps) {
             label={`Elo ${celebrity.elo ?? 1000}`}
             size="small"
             sx={{
-              background: "rgba(255,255,255,0.06)",
+              background: COLORS.border.lighter,
               color: "var(--text)",
               fontWeight: 600,
             }}
@@ -214,7 +214,7 @@ export function CelebrityProfile({ celebrity }: CelebrityProfileProps) {
             label={`${celebrity.matches ?? 0} matches`}
             size="small"
             sx={{
-              background: "rgba(255,255,255,0.06)",
+              background: COLORS.border.lighter,
               color: "var(--text)",
               fontWeight: 600,
             }}
@@ -227,7 +227,7 @@ export function CelebrityProfile({ celebrity }: CelebrityProfileProps) {
                 background: "rgba(29, 182, 168, 0.15)",
                 color: "var(--text)",
                 fontWeight: 700,
-                border: "1px solid rgba(29,182,168,0.5)",
+                border: `1px solid ${COLORS.primary.main}33`,
               }}
             />
           )}
@@ -246,8 +246,8 @@ export function CelebrityProfile({ celebrity }: CelebrityProfileProps) {
               mb: 3,
               p: 2,
               borderRadius: 2,
-              background: "rgba(0, 0, 0, 0.2)",
-              border: "1px solid rgba(255, 255, 255, 0.05)",
+              background: COLORS.background.overlay,
+              border: `1px solid ${COLORS.border.light}`,
             }}
           >
             <Typography
@@ -256,7 +256,7 @@ export function CelebrityProfile({ celebrity }: CelebrityProfileProps) {
                 display: "block",
                 textTransform: "uppercase",
                 letterSpacing: "0.08em",
-                color: "rgba(248, 249, 250, 0.5)",
+                color: COLORS.text.muted,
                 mb: 1,
               }}
             >
@@ -265,7 +265,7 @@ export function CelebrityProfile({ celebrity }: CelebrityProfileProps) {
             <Typography
               variant="body2"
               sx={{
-                color: "rgba(248, 249, 250, 0.8)",
+                color: COLORS.text.primary,
                 lineHeight: 1.6,
                 maxHeight: "240px",
                 overflow: "auto",
@@ -296,7 +296,7 @@ export function CelebrityProfile({ celebrity }: CelebrityProfileProps) {
             p: 1.5,
             borderRadius: 2,
             background: "rgba(255,255,255,0.03)",
-            border: "1px solid rgba(255,255,255,0.06)",
+            border: `1px solid ${COLORS.border.light}`,
           }}
         >
           <Typography
@@ -305,7 +305,7 @@ export function CelebrityProfile({ celebrity }: CelebrityProfileProps) {
               display: "block",
               textTransform: "uppercase",
               letterSpacing: "0.08em",
-              color: "rgba(248, 249, 250, 0.65)",
+              color: COLORS.text.muted,
               mb: 1,
             }}
           >
@@ -326,11 +326,11 @@ export function CelebrityProfile({ celebrity }: CelebrityProfileProps) {
                   disabled={isVotingVaper}
                   sx={{
                     background: "rgba(29,182,168,0.15)",
-                    border: "1px solid rgba(29,182,168,0.4)",
+                    border: `1px solid ${COLORS.primary.main}66`,
                     "&:hover": { background: "rgba(29,182,168,0.25)" },
                   }}
                 >
-                  <ThumbUpAltRoundedIcon sx={{ color: "#1DB6A8" }} />
+                  <ThumbUpAltRoundedIcon sx={{ color: COLORS.primary.main }} />
                 </IconButton>
               </span>
             </Tooltip>
@@ -347,11 +347,11 @@ export function CelebrityProfile({ celebrity }: CelebrityProfileProps) {
                   disabled={isVotingVaper}
                   sx={{
                     background: "rgba(239,71,111,0.12)",
-                    border: "1px solid rgba(239,71,111,0.35)",
+                    border: `1px solid ${COLORS.accent.main}55`,
                     "&:hover": { background: "rgba(239,71,111,0.22)" },
                   }}
                 >
-                  <ThumbDownAltRoundedIcon sx={{ color: "#EF476F" }} />
+                  <ThumbDownAltRoundedIcon sx={{ color: COLORS.accent.main }} />
                 </IconButton>
               </span>
             </Tooltip>
@@ -361,7 +361,7 @@ export function CelebrityProfile({ celebrity }: CelebrityProfileProps) {
               variant="caption"
               sx={{
                 display: "block",
-                color: "#EF476F",
+                color: COLORS.accent.main,
                 mt: 1,
               }}
             >
