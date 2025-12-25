@@ -1,9 +1,11 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
 :root {
-  --background: #0A1128;
-  --text: #F8F9FA;
-  --primary: #7B2CBF;
-  --secondary: #C71585;
-  --accent: #FF006E;
+  --background: #05080f;
+  --text: #f4f6fb;
+  --primary: #1db6a8;
+  --secondary: #ef476f;
+  --accent: #f7c948;
 }
 
 @keyframes gradientShift {
@@ -24,16 +26,12 @@
 
 body {
   color: var(--text);
-  background: linear-gradient(
-    -45deg, 
-    #0A1128, 
-    #1a0b2e, 
-    #16123f, 
-    #0A1128
-  );
-  background-size: 400% 400%;
-  animation: gradientShift 15s ease infinite;
-  font-family: 'Roboto', Arial, sans-serif;
+  background: radial-gradient(circle at 12% 18%, rgba(29, 182, 168, 0.08), transparent 25%),
+    radial-gradient(circle at 88% 12%, rgba(239, 71, 111, 0.08), transparent 24%),
+    linear-gradient(145deg, #05080f 0%, #0d1422 60%, #0b111d 100%);
+  background-size: 120% 120%;
+  animation: gradientShift 16s ease infinite;
+  font-family: 'Space Grotesk', 'Helvetica Neue', Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;

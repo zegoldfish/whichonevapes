@@ -19,22 +19,23 @@ export default function GameCardSkeleton({ position = "left" }: Props) {
     >
       <Card
         sx={{
-          maxWidth: { xs: 360, sm: 380, md: 400 },
+          maxWidth: { xs: 340, sm: 380, md: 420 },
           width: "100%",
           margin: "0 auto",
           transition: "all 0.25s ease",
-          background: "rgba(255, 255, 255, 0.03)",
+          background: "linear-gradient(145deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02))",
           backdropFilter: "blur(10px)",
-          border: "1px solid rgba(255, 255, 255, 0.1)",
+          border: "1px solid rgba(255, 255, 255, 0.08)",
           borderRadius: 3,
           overflow: "hidden",
           position: "relative",
+          boxShadow: "0 16px 36px rgba(0,0,0,0.35)",
         }}
       >
         {/* Image area */}
         <Skeleton
           variant="rectangular"
-          height={{ xs: 320, sm: 360, md: 400 }}
+          height={{ xs: 260, sm: 320, md: 380 }}
           animation="wave"
           sx={{ bgcolor: "rgba(255, 255, 255, 0.06)" }}
         />
@@ -64,13 +65,13 @@ export default function GameCardSkeleton({ position = "left" }: Props) {
               <Typography variant="caption" sx={{ visibility: "hidden" }}>
                 Score
               </Typography>
-              <Skeleton width={60} height={28} sx={{ bgcolor: "rgba(255, 255, 255, 0.06)" }} />
+              <Skeleton width={60} height={24} sx={{ bgcolor: "rgba(255, 255, 255, 0.08)" }} />
             </Box>
             <Box sx={{ textAlign: "center" }}>
               <Typography variant="caption" sx={{ visibility: "hidden" }}>
                 Matches
               </Typography>
-              <Skeleton width={60} height={28} sx={{ bgcolor: "rgba(255, 255, 255, 0.06)" }} />
+              <Skeleton width={60} height={24} sx={{ bgcolor: "rgba(255, 255, 255, 0.08)" }} />
             </Box>
           </Box>
         </CardContent>
@@ -80,7 +81,7 @@ export default function GameCardSkeleton({ position = "left" }: Props) {
       <Skeleton
         variant="rounded"
         height={40}
-        width={220}
+        width={200}
         animation="wave"
         sx={{ mt: 3, alignSelf: "center", bgcolor: "rgba(255, 255, 255, 0.08)" }}
       />

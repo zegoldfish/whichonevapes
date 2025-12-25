@@ -1,18 +1,18 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
 import Container from "@mui/material/Container";
-import Grid from "@mui/material/Grid";
 import Button from "@mui/material/Button";
 import Box from "@mui/material/Box";
 import CircularProgress from "@mui/material/CircularProgress";
 import Alert from "@mui/material/Alert";
 import Typography from "@mui/material/Typography";
-import { EnrichedGameCard } from "./components/EnrichedGameCard";
-import GameCardSkeleton from "./components/GameCardSkeleton";
+import Stack from "@mui/material/Stack";
+import Snackbar from "@mui/material/Snackbar";
 import { type Celebrity } from "@/types/celebrity";
 import { voteBetweenCelebrities, getRandomCelebrityPair } from "./actions/celebrities";
+import GameCardSkeleton from "./components/GameCardSkeleton";
+import { VoteCard } from "./components/VoteCard";
 
 function HomeContent() {
   const [pair, setPair] = useState<{ a: Celebrity; b: Celebrity } | null>(null);
@@ -23,6 +23,11 @@ function HomeContent() {
   const [voteFeedback, setVoteFeedback] = useState<"A" | "B" | null>(null);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  const [lastLatencyMs, setLastLatencyMs] = useState<number | null>(null);
+  const [lastVote, setLastVote] = useState<{
+    winner: "A" | "B";
+    winnerName: string;
+  } | null>(null);
 
   // Prefetch next pair in background
   const prefetchNextPair = async () => {
@@ -37,6 +42,7 @@ function HomeContent() {
 
   // Fetch random pair (use prefetched if available)
   const fetchPair = async () => {
+    const start = performance.now();
     setLoading(true);
     setError(null);
     try {
@@ -58,6 +64,7 @@ function HomeContent() {
       );
       setPair(null);
     } finally {
+      setLastLatencyMs(Math.round(performance.now() - start));
       setLoading(false);
     }
   };
@@ -90,6 +97,10 @@ function HomeContent() {
   const handleVote = async (winner: "A" | "B") => {
     if (!pair) return;
     setVoting(true);
+    const voteContext = {
+      winner,
+      winnerName: winner === "A" ? pair.a.name : pair.b.name,
+    };
     // Show quick feedback animation before swapping cards
     setVoteFeedback(winner);
     await new Promise((r) => setTimeout(r, 180));
@@ -115,6 +126,7 @@ function HomeContent() {
         await votePromise;
         await fetchPair();
       }
+      setLastVote(voteContext);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to record vote");
       // On error, try to fetch a new pair
@@ -153,149 +165,198 @@ function HomeContent() {
 
   return (
     <Container maxWidth="lg">
-      <Box sx={{ py: 6 }}>
-        <Box
-          sx={{
-            textAlign: "center",
-            mb: 6,
-            animation: "fadeIn 0.8s ease-out",
-            "@keyframes fadeIn": {
-              from: { opacity: 0, transform: "translateY(-20px)" },
-              to: { opacity: 1, transform: "translateY(0)" },
-            },
-          }}
-        >
+      <Box sx={{ py: { xs: 4, md: 6 }, display: "flex", flexDirection: "column", gap: 3 }}>
+        <Box sx={{ textAlign: "center", display: "grid", gap: 1 }}>
           <Typography
             variant="h2"
             sx={{
               fontWeight: 800,
-              fontSize: { xs: "2.5rem", md: "3.5rem" },
-              background: "linear-gradient(135deg, #7B2CBF 0%, #C71585 50%, #FF006E 100%)",
+              fontSize: { xs: "2.5rem", md: "3.25rem" },
+              background: "linear-gradient(135deg, #1DB6A8 0%, #EF476F 100%)",
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
               backgroundClip: "text",
-              mb: 2,
               letterSpacing: "-0.02em",
-              textShadow: "0 0 30px rgba(123, 44, 191, 0.5)",
             }}
           >
             Which One Vapes?
           </Typography>
           <Typography
-            variant="h5"
+            variant="h6"
             sx={{
-              color: "rgba(248, 249, 250, 0.8)",
-              fontWeight: 300,
-              fontSize: { xs: "1rem", md: "1.25rem" },
-              letterSpacing: "0.05em",
+              color: "rgba(248, 249, 250, 0.78)",
+              fontWeight: 500,
+              letterSpacing: "0.01em",
             }}
           >
-            Decide which celebrity is more likely to vape
+            Pick the celebrity more likely to vape. Fast, clean, one tap.
           </Typography>
-        </Box>
-
-        <Box sx={{ display: "flex", justifyContent: "center", gap: 2, mb: 4 }}>
-          <Button
-            variant="outlined"
-            onClick={fetchPair}
-            sx={{
-              borderColor: "rgba(123, 44, 191, 0.5)",
-              color: "var(--text)",
-              borderRadius: 2,
-              px: 3,
-              py: 1.5,
-              backdropFilter: "blur(10px)",
-              background: "rgba(255, 255, 255, 0.03)",
-              transition: "all 0.3s ease",
-              "&:hover": {
-                borderColor: "var(--primary)",
-                background: "rgba(123, 44, 191, 0.1)",
-                transform: "translateY(-2px)",
-                boxShadow: "0 8px 20px rgba(123, 44, 191, 0.3)",
-              },
-            }}
-          >
-            New Pair
-          </Button>
+          <Stack direction="row" justifyContent="center" spacing={2} sx={{ mt: 2 }}>
+            <Button
+              variant="outlined"
+              onClick={fetchPair}
+              sx={{
+                px: 3,
+                py: 1.25,
+                borderRadius: 3,
+                borderColor: "rgba(248,249,250,0.22)",
+                color: "var(--text)",
+                background: "rgba(255,255,255,0.04)",
+                textTransform: "none",
+                fontWeight: 700,
+                letterSpacing: "0.01em",
+                "&:hover": {
+                  borderColor: "rgba(248,249,250,0.4)",
+                  background: "rgba(255,255,255,0.08)",
+                },
+              }}
+            >
+              Skip / New Pair
+            </Button>
+          </Stack>
         </Box>
 
         <Box
           sx={{
             textAlign: "center",
-            mb: 3,
-            opacity: 0.6,
-            fontSize: "0.85rem",
-            color: "rgba(248, 249, 250, 0.7)",
+            display: "flex",
+            justifyContent: "center",
           }}
         >
-          <Typography variant="caption" sx={{ display: { xs: "none", md: "block" } }}>
-            Use ← → arrow keys to vote • Space for new pair
-          </Typography>
-          <Typography variant="caption" sx={{ display: { xs: "block", md: "none" } }}>
-            Swipe left or right to vote
-          </Typography>
+          <Box
+            sx={{
+              px: 2.5,
+              py: 0.75,
+              borderRadius: 999,
+              background: "rgba(255,255,255,0.06)",
+              color: "rgba(248,249,250,0.75)",
+              fontSize: "0.9rem",
+              display: "flex",
+              gap: 1,
+              alignItems: "center",
+              border: "1px solid rgba(255,255,255,0.08)",
+            }}
+          >
+            <Typography sx={{ display: { xs: "none", md: "inline" } }}>
+              Use ← → to vote, space to skip.
+            </Typography>
+            <Typography sx={{ display: { xs: "inline", md: "none" } }}>
+              Swipe left or right to vote.
+            </Typography>
+          </Box>
         </Box>
 
         {error && (
-          <Alert severity="error" sx={{ mb: 4 }}>
+          <Alert severity="error" sx={{ mb: 1 }}>
             {error}
           </Alert>
         )}
 
-        <Grid
-          container
-          spacing={{ xs: 3, md: 6 }}
-          justifyContent="center"
-          alignItems="stretch"
+        <Box
           onTouchStart={onTouchStart}
           onTouchMove={onTouchMove}
           onTouchEnd={onTouchEnd}
           sx={{
-            minHeight: "60vh",
-            animation: "slideUp 0.6s ease-out",
-            overflowX: { xs: "auto", md: "visible" },
-            scrollSnapType: { xs: "x mandatory", md: "none" },
-            gridAutoFlow: { xs: "column", md: "row" },
-            gridAutoColumns: { xs: "88vw", sm: "320px", md: "unset" },
-            px: { xs: 1, md: 0 },
-            "& > .MuiGrid2-root": {
-              scrollSnapAlign: { xs: "center", md: "unset" },
-            },
-            "@keyframes slideUp": {
-              from: { opacity: 0, transform: "translateY(30px)" },
-              to: { opacity: 1, transform: "translateY(0)" },
-            },
+            display: "grid",
+            gap: { xs: 3, md: 4 },
+            gridTemplateColumns: { xs: "1fr", md: "repeat(2, minmax(0, 1fr))" },
+            alignItems: "stretch",
+            justifyItems: "center",
+            minHeight: "62vh",
+            paddingBottom: 2,
           }}
         >
-          <Grid size={{ xs: 12, md: 6 }}>
-            {loading || !pair ? (
-              <GameCardSkeleton position="left" />
-            ) : (
-              <EnrichedGameCard
-                key={pair.a.id}
-                celebrity={pair.a}
-                onVote={() => handleVote("A")}
-                isVoting={voting}
-                position="left"
-                voteState={voteFeedback === "A" ? "winner" : voteFeedback === "B" ? "loser" : null}
-              />
+          {loading || !pair ? (
+            <GameCardSkeleton position="left" />
+          ) : (
+            <VoteCard
+              key={pair.a.id}
+              celebrity={pair.a}
+              onVote={() => handleVote("A")}
+              isVoting={voting}
+              position="left"
+              voteState={
+                voteFeedback === "A" ? "winner" : voteFeedback === "B" ? "loser" : null
+              }
+            />
+          )}
+
+          {loading || !pair ? (
+            <GameCardSkeleton position="right" />
+          ) : (
+            <VoteCard
+              key={pair.b.id}
+              celebrity={pair.b}
+              onVote={() => handleVote("B")}
+              isVoting={voting}
+              position="right"
+              voteState={
+                voteFeedback === "B" ? "winner" : voteFeedback === "A" ? "loser" : null
+              }
+            />
+          )}
+        </Box>
+
+        <Box sx={{ display: "flex", justifyContent: "center" }}>
+          <Box
+            sx={{
+              px: 1.75,
+              py: 0.6,
+              borderRadius: 999,
+              background: "rgba(255,255,255,0.05)",
+              border: "1px solid rgba(255,255,255,0.08)",
+              fontSize: "0.85rem",
+              color: "rgba(248,249,250,0.75)",
+              display: "flex",
+              gap: 1,
+              alignItems: "center",
+            }}
+          >
+            <Box
+              sx={{
+                width: 10,
+                height: 10,
+                borderRadius: "50%",
+                background: prefetchedPair ? "#1DB6A8" : loading ? "#F7C948" : "#EF476F",
+                boxShadow: prefetchedPair ? "0 0 12px rgba(29,182,168,0.6)" : "none",
+              }}
+            />
+            <Typography component="span">
+              {loading
+                ? "Fetching pair..."
+                : prefetchedPair
+                ? "Next pair cached"
+                : "Prefetching next pair"}
+            </Typography>
+            {lastLatencyMs !== null && !loading && (
+              <Typography component="span" sx={{ color: "rgba(248,249,250,0.55)" }}>
+                · {lastLatencyMs}ms
+              </Typography>
             )}
-          </Grid>
-          <Grid size={{ xs: 12, md: 6 }}>
-            {loading || !pair ? (
-              <GameCardSkeleton position="right" />
-            ) : (
-              <EnrichedGameCard
-                key={pair.b.id}
-                celebrity={pair.b}
-                onVote={() => handleVote("B")}
-                isVoting={voting}
-                position="right"
-                voteState={voteFeedback === "B" ? "winner" : voteFeedback === "A" ? "loser" : null}
-              />
-            )}
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
+
+        <Snackbar
+          open={!!lastVote}
+          autoHideDuration={3200}
+          onClose={(_, reason) => {
+            if (reason === "clickaway") return;
+            setLastVote(null);
+          }}
+          anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+          message={lastVote ? `Voted for ${lastVote.winnerName}` : ""}
+          sx={{
+            "& .MuiSnackbarContent-root": {
+              background: "rgba(12, 18, 32, 0.9)",
+              color: "var(--text)",
+              border: "1px solid rgba(255,255,255,0.08)",
+              boxShadow: "0 12px 30px rgba(0,0,0,0.45)",
+              borderRadius: 2,
+              fontWeight: 700,
+              letterSpacing: "0.01em",
+            },
+          }}
+        />
       </Box>
     </Container>
   );
