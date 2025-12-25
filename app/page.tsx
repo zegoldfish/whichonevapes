@@ -236,10 +236,10 @@ function HomeContent() {
               border: "1px solid rgba(255,255,255,0.08)",
             }}
           >
-            <Typography sx={{ display: { xs: "none", md: "inline" } }}>
+            <Typography component="span" sx={{ display: { xs: "none", md: "inline" } }}>
               Use ← → to vote, space to skip.
             </Typography>
-            <Typography sx={{ display: { xs: "inline", md: "none" } }}>
+            <Typography component="span" sx={{ display: { xs: "inline", md: "none" } }}>
               Swipe left or right to vote.
             </Typography>
           </Box>
