@@ -73,7 +73,7 @@ export function CelebrityProfile({ celebrity }: CelebrityProfileProps) {
         active = false;
       };
     }
-  }, [celebrity.wikipediaPageId, imgSrc, bio]);
+  }, [celebrity.wikipediaPageId]);
 
   const { isLikelyVaper, percentage } = getVaperLikelihood(
     vaperVotes.yes,
