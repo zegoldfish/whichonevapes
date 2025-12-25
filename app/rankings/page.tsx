@@ -1,3 +1,7 @@
+"use client";
+
+import { useState, useEffect, useMemo, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { getAllCelebrities } from "@/app/actions/celebrities";
 import Link from "next/link";
 import {
@@ -11,25 +15,50 @@ import {
   TableRow,
   Paper,
   Typography,
+  TextField,
+  InputAdornment,
+  CircularProgress,
 } from "@mui/material";
+import SearchIcon from "@mui/icons-material/Search";
 import RankingsPagination from "@/app/components/RankingsPagination";
+import { type Celebrity } from "@/types/celebrity";
 
 const ITEMS_PER_PAGE = 50;
 
-export default async function RankingsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ page?: string }>;
-}) {
-  const celebrities = await getAllCelebrities();
-  const params = await searchParams;
-  const requestedPage = Number(params.page) || 1;
-  const totalPages = Math.ceil(celebrities.length / ITEMS_PER_PAGE);
-  // Clamp currentPage to valid range [1, totalPages]
+function RankingsContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [celebrities, setCelebrities] = useState<Celebrity[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  useEffect(() => {
+    getAllCelebrities()
+      .then((data) => setCelebrities(data))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const filteredCelebrities = useMemo(() => {
+    if (!searchQuery.trim()) return celebrities;
+    const query = searchQuery.toLowerCase();
+    return celebrities.filter((celeb) =>
+      celeb.name.toLowerCase().includes(query)
+    );
+  }, [celebrities, searchQuery]);
+
+  const requestedPage = Number(searchParams.get("page")) || 1;
+  const totalPages = Math.ceil(filteredCelebrities.length / ITEMS_PER_PAGE);
   const currentPage = Math.max(1, Math.min(requestedPage, totalPages));
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const endIndex = startIndex + ITEMS_PER_PAGE;
-  const paginatedCelebrities = celebrities.slice(startIndex, endIndex);
+  const paginatedCelebrities = filteredCelebrities.slice(startIndex, endIndex);
+
+  // Reset to page 1 when search changes
+  useEffect(() => {
+    if (searchQuery && currentPage > totalPages) {
+      router.push("/rankings?page=1");
+    }
+  }, [searchQuery, currentPage, totalPages, router]);
 
   return (
     <Container maxWidth="lg" sx={{ py: 6 }}>
@@ -72,7 +101,61 @@ export default async function RankingsPage({
         </Typography>
       </Box>
 
-      <TableContainer
+      <Box sx={{ mb: 4, display: "flex", justifyContent: "center" }}>
+        <TextField
+          placeholder="Search celebrities..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          variant="outlined"
+          sx={{
+            width: { xs: "100%", sm: "400px" },
+            "& .MuiOutlinedInput-root": {
+              background: "rgba(255, 255, 255, 0.03)",
+              backdropFilter: "blur(10px)",
+              borderRadius: 3,
+              "& fieldset": {
+                borderColor: "rgba(255, 255, 255, 0.1)",
+              },
+              "&:hover fieldset": {
+                borderColor: "rgba(123, 44, 191, 0.5)",
+              },
+              "&.Mui-focused fieldset": {
+                borderColor: "var(--primary)",
+              },
+            },
+            "& .MuiInputBase-input": {
+              color: "var(--text)",
+              padding: "12px 16px",
+            },
+          }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon sx={{ color: "rgba(248, 249, 250, 0.5)" }} />
+              </InputAdornment>
+            ),
+          }}
+        />
+      </Box>
+
+      {loading ? (
+        <Box sx={{ display: "flex", justifyContent: "center", py: 10 }}>
+          <CircularProgress />
+        </Box>
+      ) : (
+        <>
+          {filteredCelebrities.length === 0 ? (
+            <Box
+              sx={{
+                textAlign: "center",
+                py: 10,
+                color: "rgba(248, 249, 250, 0.6)",
+              }}
+            >
+              <Typography variant="h6">No celebrities found</Typography>
+            </Box>
+          ) : (
+            <TableContainer
         component={Paper}
         sx={{
           background: "rgba(255, 255, 255, 0.03)",
@@ -282,8 +365,36 @@ export default async function RankingsPage({
           </TableBody>
         </Table>
       </TableContainer>
+          )}
 
-      <RankingsPagination totalPages={totalPages} currentPage={currentPage} />
+          {filteredCelebrities.length > 0 && (
+            <RankingsPagination totalPages={totalPages} currentPage={currentPage} />
+          )}
+        </>
+      )}
     </Container>
+  );
+}
+
+export default function RankingsPage() {
+  return (
+    <Suspense
+      fallback={
+        <Container maxWidth="lg" sx={{ py: 6 }}>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              minHeight: "50vh",
+            }}
+          >
+            <CircularProgress />
+          </Box>
+        </Container>
+      }
+    >
+      <RankingsContent />
+    </Suspense>
   );
 }
