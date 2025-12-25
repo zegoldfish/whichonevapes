@@ -30,6 +30,7 @@ function RankingsContent() {
   const searchParams = useSearchParams();
   const [celebrities, setCelebrities] = useState<Celebrity[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchInput, setSearchInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
@@ -37,6 +38,15 @@ function RankingsContent() {
       .then((data) => setCelebrities(data))
       .finally(() => setLoading(false));
   }, []);
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchQuery(searchInput);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   const filteredCelebrities = useMemo(() => {
     if (!searchQuery.trim()) return celebrities;
@@ -104,8 +114,8 @@ function RankingsContent() {
       <Box sx={{ mb: 4, display: "flex", justifyContent: "center" }}>
         <TextField
           placeholder="Search celebrities..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
           variant="outlined"
           sx={{
             width: { xs: "100%", sm: "400px" },
