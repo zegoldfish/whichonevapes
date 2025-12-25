@@ -3,6 +3,7 @@ import { z } from "zod";
 export const CelebritySchema = z.object({
   id: z.uuid(),
   name: z.string().min(1),
+  slug: z.string().min(1).optional(),
   wikipediaPageId: z.string().optional(),
   image: z.string().url().optional(),
   bio: z.string().optional(),
@@ -27,6 +28,7 @@ export type CreateCelebrityInput = z.infer<typeof CreateCelebrityInputSchema>;
 export const UpdateCelebrityInputSchema = z.object({
   id: z.uuid(),
   name: z.string().min(1).optional(),
+  slug: z.string().min(1).optional(),
   vapesVotes: z.number().int().min(0).optional(),
   doesNotVapeVotes: z.number().int().min(0).optional(),
   elo: z.number().int().min(0).optional(),
