@@ -29,7 +29,6 @@ function HomeContent() {
     winnerName: string;
   } | null>(null);
 
-  // Prefetch next pair in background
   const prefetchNextPair = async () => {
     try {
       const nextPair = await getRandomCelebrityPair();
