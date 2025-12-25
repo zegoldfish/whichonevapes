@@ -275,6 +275,40 @@ export function EnrichedGameCard({
                 Confirmed Vaper
               </Box>
             )}
+            {!confirmed && (() => {
+              const yesVotes = vaperVotes.yes;
+              const noVotes = vaperVotes.no;
+              const totalVotes = yesVotes + noVotes;
+              
+              if (totalVotes >= 10) {
+                const percentage = (yesVotes / totalVotes) * 100;
+                if (percentage >= 60) {
+                  return (
+                    <Box
+                      sx={{
+                        position: "absolute",
+                        top: 12,
+                        left: 12,
+                        px: 1.25,
+                        py: 0.4,
+                        borderRadius: 1.5,
+                        fontSize: "0.75rem",
+                        fontWeight: 800,
+                        color: "white",
+                        background: "linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%)",
+                        boxShadow: "0 6px 16px rgba(76, 175, 80, 0.35)",
+                        zIndex: 2,
+                        letterSpacing: "0.05em",
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      Likely Vaper
+                    </Box>
+                  );
+                }
+              }
+              return null;
+            })()}
             <Box
               sx={{
                 position: "absolute",
