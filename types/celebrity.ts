@@ -13,6 +13,8 @@ export const CelebritySchema = z.object({
   wins: z.number().int().min(0).default(0),
   matches: z.number().int().min(0).default(0),
   confirmedVaper: z.boolean().default(false),
+  confirmedVaperYesVotes: z.number().int().min(0).default(0),
+  confirmedVaperNoVotes: z.number().int().min(0).default(0),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });
@@ -35,6 +37,8 @@ export const UpdateCelebrityInputSchema = z.object({
   wins: z.number().int().min(0).optional(),
   matches: z.number().int().min(0).optional(),
   confirmedVaper: z.boolean().optional(),
+  confirmedVaperYesVotes: z.number().int().min(0).optional(),
+  confirmedVaperNoVotes: z.number().int().min(0).optional(),
 });
 
 export type UpdateCelebrityInput = z.infer<typeof UpdateCelebrityInputSchema>;

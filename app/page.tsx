@@ -15,7 +15,6 @@ import { type Celebrity } from "@/types/celebrity";
 import { voteBetweenCelebrities, getRandomCelebrityPair } from "./actions/celebrities";
 
 function HomeContent() {
-  const searchParams = useSearchParams();
   const [pair, setPair] = useState<{ a: Celebrity; b: Celebrity } | null>(null);
   const [prefetchedPair, setPrefetchedPair] = useState<{ a: Celebrity; b: Celebrity } | null>(null);
   const [loading, setLoading] = useState(true);

@@ -20,7 +20,9 @@ import {
   CircularProgress,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import RankingsPagination from "@/app/components/RankingsPagination";
+import { getVaperLikelihood } from "@/lib/vaper";
 import { type Celebrity } from "@/types/celebrity";
 
 const ITEMS_PER_PAGE = 50;
@@ -260,6 +262,18 @@ function RankingsContent() {
               >
                 Win Rate
               </TableCell>
+              <TableCell
+                align="center"
+                sx={{
+                  color: "var(--text)",
+                  fontWeight: 800,
+                  fontSize: "0.9rem",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.1em",
+                }}
+              >
+                Vaper Status
+              </TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -328,6 +342,32 @@ function RankingsContent() {
                           Confirmed
                         </Box>
                       )}
+                      {(() => {
+                        const yesVotes = celeb.confirmedVaperYesVotes ?? 0;
+                        const noVotes = celeb.confirmedVaperNoVotes ?? 0;
+                        const { isLikelyVaper } = getVaperLikelihood(yesVotes, noVotes);
+
+                        if (isLikelyVaper && !Boolean((celeb as any).confirmedVaper)) {
+                          return (
+                            <Box
+                              component="span"
+                              sx={{
+                                px: 1,
+                                py: 0.25,
+                                borderRadius: 999,
+                                fontSize: "0.7rem",
+                                fontWeight: 700,
+                                color: "white",
+                                background: "linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%)",
+                                boxShadow: "0 4px 12px rgba(76, 175, 80, 0.35)",
+                              }}
+                            >
+                              Likely Vaper
+                            </Box>
+                          );
+                        }
+                        return null;
+                      })()}
                     </Box>
                   </TableCell>
                   <TableCell
@@ -368,6 +408,59 @@ function RankingsContent() {
                     {celeb.matches && celeb.matches > 0
                       ? ((((celeb.wins ?? 0) / celeb.matches) * 100).toFixed(1) + "%")
                       : "N/A"}
+                  </TableCell>
+                  <TableCell
+                    align="center"
+                    sx={{
+                      color: "rgba(248, 249, 250, 0.8)",
+                    }}
+                  >
+                    {(() => {
+                      const yesVotes = celeb.confirmedVaperYesVotes ?? 0;
+                      const noVotes = celeb.confirmedVaperNoVotes ?? 0;
+                      const { isLikelyVaper, percentage, totalVotes } = getVaperLikelihood(yesVotes, noVotes);
+
+                      if (totalVotes === 0) {
+                        return (
+                          <Typography variant="body2" sx={{ color: "rgba(248, 249, 250, 0.4)" }}>
+                            No votes
+                          </Typography>
+                        );
+                      }
+
+                      return (
+                        <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 0.5 }}>
+                          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                            {isLikelyVaper && (
+                              <CheckCircleIcon
+                                sx={{
+                                  fontSize: "1rem",
+                                  color: "#4CAF50",
+                                }}
+                              />
+                            )}
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                fontWeight: 700,
+                                color: isLikelyVaper ? "#4CAF50" : "rgba(248, 249, 250, 0.6)",
+                              }}
+                            >
+                              {percentage.toFixed(0)}%
+                            </Typography>
+                          </Box>
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              fontSize: "0.7rem",
+                              color: "rgba(248, 249, 250, 0.5)",
+                            }}
+                          >
+                            {yesVotes}👍 / {noVotes}👎
+                          </Typography>
+                        </Box>
+                      );
+                    })()}
                   </TableCell>
                 </TableRow>
               );
