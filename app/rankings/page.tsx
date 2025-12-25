@@ -1,479 +1,382 @@
 "use client";
 
-import { useState, useEffect, useMemo, Suspense } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { getAllCelebrities } from "@/app/actions/celebrities";
 import Link from "next/link";
 import {
-  Container,
+  Alert,
   Box,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Typography,
-  TextField,
-  InputAdornment,
+  Chip,
   CircularProgress,
+  Container,
+  InputAdornment,
+  Skeleton,
+  TextField,
+  Typography,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
+import ArrowOutwardIcon from "@mui/icons-material/ArrowOutward";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import RankingsPagination from "@/app/components/RankingsPagination";
+import { getRankedCelebritiesPage } from "@/app/actions/celebrities";
 import { getVaperLikelihood } from "@/lib/vaper";
+import { COLORS, GRADIENTS } from "@/lib/theme";
 import { type Celebrity } from "@/types/celebrity";
 
-const ITEMS_PER_PAGE = 50;
+const PAGE_SIZE = 24;
+
+function StatPill({ label, value }: { label: string; value: string | number }) {
+  return (
+    <Box
+      sx={{
+        p: 1.25,
+        borderRadius: 2,
+        background: "rgba(255,255,255,0.04)",
+        border: `1px solid ${COLORS.border.lighter}`,
+      }}
+    >
+      <Typography
+        variant="caption"
+        sx={{ color: COLORS.text.muted, textTransform: "uppercase", letterSpacing: "0.08em" }}
+      >
+        {label}
+      </Typography>
+      <Typography variant="subtitle1" sx={{ fontWeight: 800, color: "var(--text)" }}>
+        {value}
+      </Typography>
+    </Box>
+  );
+}
+
+function RankingCard({ celeb, rank }: { celeb: Celebrity; rank: number }) {
+  const { isLikelyVaper, percentage } = getVaperLikelihood(
+    celeb.confirmedVaperYesVotes,
+    celeb.confirmedVaperNoVotes
+  );
+
+  const winRate = useMemo(() => {
+    if (!celeb.matches || celeb.matches === 0) return null;
+    const pct = ((celeb.wins ?? 0) / celeb.matches) * 100;
+    return `${pct.toFixed(1)}% win rate`;
+  }, [celeb.matches, celeb.wins]);
+
+  const medalColor = rank === 1 ? "#FFD166" : rank === 2 ? "#A0AEC0" : "#B2772B";
+
+  return (
+    <Box
+      sx={{
+        p: 2.5,
+        display: "grid",
+        gap: 1.5,
+        borderRadius: 3,
+        background: GRADIENTS.card,
+        border: `1px solid ${COLORS.border.light}`,
+        boxShadow: "0 12px 32px rgba(0,0,0,0.35)",
+        minHeight: 200,
+      }}
+    >
+      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+          <Box
+            sx={{
+              width: 46,
+              height: 46,
+              borderRadius: 2,
+              display: "grid",
+              placeItems: "center",
+              background: "rgba(255,255,255,0.05)",
+              border: `1px solid ${COLORS.border.lighter}`,
+              fontWeight: 800,
+              color: "var(--text)",
+              position: "relative",
+            }}
+          >
+            {rank <= 3 ? <EmojiEventsIcon sx={{ color: medalColor }} /> : rank}
+          </Box>
+          <Box>
+            <Link
+              href={`/celeb/${celeb.id}`}
+              style={{
+                color: "var(--text)",
+                textDecoration: "none",
+                fontWeight: 800,
+                fontSize: "1.05rem",
+                letterSpacing: "-0.01em",
+              }}
+            >
+              {celeb.name}
+            </Link>
+            <Typography variant="caption" sx={{ color: COLORS.text.muted, display: "block" }}>
+              Elo {(celeb.elo ?? 1000).toFixed(0)}
+            </Typography>
+          </Box>
+        </Box>
+
+        <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", justifyContent: "flex-end" }}>
+          {celeb.confirmedVaper && (
+            <Chip
+              icon={<CheckCircleIcon sx={{ color: "#0b0d14" }} />}
+              label="Confirmed"
+              size="small"
+              sx={{
+                background: GRADIENTS.confirmedVaper,
+                color: "#0b0d14",
+                fontWeight: 800,
+              }}
+            />
+          )}
+          {!celeb.confirmedVaper && isLikelyVaper && (
+            <Chip
+              label={`Likely vaper · ${percentage.toFixed(0)}%`}
+              size="small"
+              sx={{
+                background: "rgba(29, 182, 168, 0.15)",
+                color: "var(--text)",
+                border: `1px solid ${COLORS.primary.light}55`,
+                fontWeight: 700,
+              }}
+            />
+          )}
+        </Box>
+      </Box>
+
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
+          gap: 1,
+        }}
+      >
+        <StatPill label="Wins" value={celeb.wins ?? 0} />
+        <StatPill label="Matches" value={celeb.matches ?? 0} />
+        <StatPill label="Win rate" value={winRate ?? "N/A"} />
+      </Box>
+
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <Typography variant="body2" sx={{ color: COLORS.text.muted }}>
+          {celeb.confirmedVaperYesVotes ?? 0} 👍 / {celeb.confirmedVaperNoVotes ?? 0} 👎
+        </Typography>
+        <Link
+          href={`/celeb/${celeb.id}`}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+            color: "var(--text)",
+            fontWeight: 700,
+            textDecoration: "none",
+          }}
+        >
+          View profile <ArrowOutwardIcon sx={{ fontSize: 18 }} />
+        </Link>
+      </Box>
+    </Box>
+  );
+}
 
 function RankingsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [celebrities, setCelebrities] = useState<Celebrity[]>([]);
+  const initialSearch = searchParams.get("q") ?? "";
+  const initialCursor = searchParams.get("cursor") ?? null;
+
+  const [searchInput, setSearchInput] = useState(initialSearch);
+  const [searchQuery, setSearchQuery] = useState(initialSearch);
+  const [celebrities, setCelebrities] = useState<Array<Celebrity & { rank: number }>>([]);
+  const [nextCursor, setNextCursor] = useState<string | undefined>();
+  const [currentCursor, setCurrentCursor] = useState<string | undefined>(initialCursor || undefined);
+  const [cursorStack, setCursorStack] = useState<(string | null)[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchInput, setSearchInput] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+  const hasLoadedRef = useRef(false);
 
-  useEffect(() => {
-    getAllCelebrities()
-      .then((data) => setCelebrities(data))
-      .finally(() => setLoading(false));
-  }, []);
+  const page = cursorStack.length + 1;
+  const isLoading = loading || isPending;
+  const rankOffset = (page - 1) * PAGE_SIZE;
 
-  // Debounce search input
   useEffect(() => {
     const timer = setTimeout(() => {
-      setSearchQuery(searchInput);
+      setSearchQuery(searchInput.trim());
     }, 300);
-
     return () => clearTimeout(timer);
   }, [searchInput]);
 
-  const filteredCelebrities = useMemo(() => {
-    if (!searchQuery.trim()) return celebrities;
-    const query = searchQuery.toLowerCase();
-    return celebrities.filter((celeb) =>
-      celeb.name.toLowerCase().includes(query)
-    );
-  }, [celebrities, searchQuery]);
+  const updateUrl = (cursor: string | null, search: string) => {
+    const params = new URLSearchParams();
+    if (cursor) params.set("cursor", cursor);
+    if (search) params.set("q", search);
+    const query = params.toString();
+    router.replace(query ? `/rankings?${query}` : "/rankings", { scroll: false });
+  };
 
-  const requestedPage = Number(searchParams.get("page")) || 1;
-  const totalPages = Math.ceil(filteredCelebrities.length / ITEMS_PER_PAGE);
-  const currentPage = Math.max(1, Math.min(requestedPage, totalPages));
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const endIndex = startIndex + ITEMS_PER_PAGE;
-  const paginatedCelebrities = filteredCelebrities.slice(startIndex, endIndex);
+  const loadPage = (cursor: string | null, stack: (string | null)[]) => {
+    setLoading(true);
+    setError(null);
+    startTransition(async () => {
+      try {
+        const { items, nextCursor: newNextCursor } = await getRankedCelebritiesPage({
+          pageSize: PAGE_SIZE,
+          cursor,
+          search: searchQuery || null,
+        });
 
-  // Reset to page 1 when search changes
+        setCelebrities(items);
+        setNextCursor(newNextCursor);
+        setCursorStack(stack);
+        setCurrentCursor(cursor || undefined);
+        updateUrl(cursor, searchQuery);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load rankings");
+      } finally {
+        setLoading(false);
+      }
+    });
+  };
+
   useEffect(() => {
-    if (searchQuery && currentPage > totalPages) {
-      router.push("/rankings?page=1");
+    if (!hasLoadedRef.current) {
+      hasLoadedRef.current = true;
+      // On initial load, ignore any initialCursor when there is a search query,
+      // so searches always start from the first page.
+      const initialLoadCursor = searchQuery ? null : initialCursor;
+      loadPage(initialLoadCursor, []);
+      return;
     }
-  }, [searchQuery, currentPage, totalPages, router]);
+    // When the search query changes after the initial load, reset to the first page.
+    loadPage(null, []);
+  }, [searchQuery]);
+
+  const handleNext = () => {
+    if (!nextCursor) return;
+    const newStack = [...cursorStack, currentCursor ?? null];
+    loadPage(nextCursor, newStack);
+  };
+
+  const handlePrev = () => {
+    if (cursorStack.length === 0) return;
+    const newStack = [...cursorStack];
+    const prevCursor = newStack.pop() || null;
+    loadPage(prevCursor, newStack);
+  };
 
   return (
     <Container maxWidth="lg" sx={{ py: 6 }}>
       <Box
         sx={{
-          mb: 6,
+          mb: 5,
+          p: 3,
+          borderRadius: 3,
           textAlign: "center",
-          animation: "fadeIn 0.8s ease-out",
-          "@keyframes fadeIn": {
-            from: { opacity: 0, transform: "translateY(-20px)" },
-            to: { opacity: 1, transform: "translateY(0)" },
-          },
+          background: "linear-gradient(135deg, rgba(29,182,168,0.12), rgba(239,71,111,0.12))",
+          border: "1px solid rgba(255,255,255,0.08)",
         }}
       >
         <Typography
           variant="h2"
-          component="h1"
-          gutterBottom
           sx={{
             fontWeight: 800,
-            fontSize: { xs: "2.5rem", md: "3.5rem" },
-            background: "linear-gradient(135deg, #7B2CBF 0%, #C71585 50%, #FF006E 100%)",
+            fontSize: { xs: "2.2rem", md: "3rem" },
+            background: "linear-gradient(135deg, #1DB6A8 0%, #EF476F 100%)",
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",
             backgroundClip: "text",
             letterSpacing: "-0.02em",
           }}
         >
-          Rankings
-        </Typography>
-        <Typography
-          variant="h6"
-          sx={{
-            color: "rgba(248, 249, 250, 0.7)",
-            fontWeight: 300,
-            letterSpacing: "0.05em",
-          }}
-        >
-          Top celebrities by ELO rating • {celebrities.length} total
+          Elo Rankings
         </Typography>
       </Box>
 
-      <Box sx={{ mb: 4, display: "flex", justifyContent: "center" }}>
+      <Box sx={{ mb: 3, display: "flex", justifyContent: "center" }}>
         <TextField
-          placeholder="Search celebrities..."
+          placeholder="Search celebrities"
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
           variant="outlined"
           sx={{
-            width: { xs: "100%", sm: "400px" },
+            width: { xs: "100%", sm: 420 },
             "& .MuiOutlinedInput-root": {
-              background: "rgba(255, 255, 255, 0.03)",
-              backdropFilter: "blur(10px)",
+              background: "rgba(255,255,255,0.04)",
               borderRadius: 3,
-              "& fieldset": {
-                borderColor: "rgba(255, 255, 255, 0.1)",
-              },
-              "&:hover fieldset": {
-                borderColor: "rgba(123, 44, 191, 0.5)",
-              },
-              "&.Mui-focused fieldset": {
-                borderColor: "var(--primary)",
-              },
-            },
-            "& .MuiInputBase-input": {
               color: "var(--text)",
-              padding: "12px 16px",
+              "& fieldset": { borderColor: "rgba(255,255,255,0.12)" },
+              "&:hover fieldset": { borderColor: "rgba(255,255,255,0.4)" },
+              "&.Mui-focused fieldset": { borderColor: COLORS.primary.light },
             },
+            "& .MuiInputBase-input": { padding: "12px 14px" },
           }}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
-                <SearchIcon sx={{ color: "rgba(248, 249, 250, 0.5)" }} />
+                <SearchIcon sx={{ color: COLORS.text.muted }} />
               </InputAdornment>
             ),
           }}
         />
       </Box>
 
-      {loading ? (
-        <Box sx={{ display: "flex", justifyContent: "center", py: 10 }}>
-          <CircularProgress />
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
+
+      {isLoading && celebrities.length === 0 ? (
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", md: "repeat(3, 1fr)" },
+            gap: 2.5,
+          }}
+        >
+          {Array.from({ length: 8 }).map((_, idx) => (
+            <Skeleton
+              key={idx}
+              variant="rectangular"
+              height={180}
+              sx={{
+                borderRadius: 3,
+                background: "rgba(255,255,255,0.05)",
+              }}
+            />
+          ))}
+        </Box>
+      ) : celebrities.length === 0 ? (
+        <Box sx={{ py: 10, textAlign: "center", color: COLORS.text.muted }}>
+          <Typography variant="h6">No celebrities found</Typography>
+          <Typography variant="body2">Try a different search or clear filters.</Typography>
         </Box>
       ) : (
         <>
-          {filteredCelebrities.length === 0 ? (
-            <Box
-              sx={{
-                textAlign: "center",
-                py: 10,
-                color: "rgba(248, 249, 250, 0.6)",
-              }}
-            >
-              <Typography variant="h6">No celebrities found</Typography>
-            </Box>
-          ) : (
-            <TableContainer
-        component={Paper}
-        sx={{
-          background: "rgba(255, 255, 255, 0.03)",
-          backdropFilter: "blur(10px)",
-          border: "1px solid rgba(255, 255, 255, 0.1)",
-          borderRadius: 3,
-          overflow: "hidden",
-          boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
-          animation: "slideUp 0.6s ease-out",
-          "@keyframes slideUp": {
-            from: { opacity: 0, transform: "translateY(30px)" },
-            to: { opacity: 1, transform: "translateY(0)" },
-          },
-        }}
-      >
-        <Table>
-          <TableHead>
-            <TableRow
-              sx={{
-                background: "linear-gradient(135deg, rgba(123, 44, 191, 0.2) 0%, rgba(199, 21, 133, 0.2) 100%)",
-                borderBottom: "2px solid rgba(123, 44, 191, 0.5)",
-              }}
-            >
-              <TableCell
-                sx={{
-                  color: "var(--text)",
-                  fontWeight: 800,
-                  fontSize: "0.9rem",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.1em",
-                  py: 2,
-                }}
-              >
-                Rank
-              </TableCell>
-              <TableCell
-                sx={{
-                  color: "var(--text)",
-                  fontWeight: 800,
-                  fontSize: "0.9rem",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.1em",
-                }}
-              >
-                Name
-              </TableCell>
-              <TableCell
-                align="right"
-                sx={{
-                  color: "var(--text)",
-                  fontWeight: 800,
-                  fontSize: "0.9rem",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.1em",
-                }}
-              >
-                ELO Rating
-              </TableCell>
-              <TableCell
-                align="right"
-                sx={{
-                  color: "var(--text)",
-                  fontWeight: 800,
-                  fontSize: "0.9rem",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.1em",
-                }}
-              >
-                Wins
-              </TableCell>
-              <TableCell
-                align="right"
-                sx={{
-                  color: "var(--text)",
-                  fontWeight: 800,
-                  fontSize: "0.9rem",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.1em",
-                }}
-              >
-                Matches
-              </TableCell>
-              <TableCell
-                align="right"
-                sx={{
-                  color: "var(--text)",
-                  fontWeight: 800,
-                  fontSize: "0.9rem",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.1em",
-                }}
-              >
-                Win Rate
-              </TableCell>
-              <TableCell
-                align="center"
-                sx={{
-                  color: "var(--text)",
-                  fontWeight: 800,
-                  fontSize: "0.9rem",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.1em",
-                }}
-              >
-                Vaper Status
-              </TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {paginatedCelebrities.map((celeb, index) => {
-              const globalRank = startIndex + index + 1;
-              const isTopThree = globalRank <= 3;
-              const medals = ['🥇', '🥈', '🥉'];
-              
-              return (
-                <TableRow
-                  key={celeb.id}
-                  sx={{
-                    transition: "all 0.3s ease",
-                    "&:hover": {
-                      backgroundColor: "rgba(123, 44, 191, 0.1)",
-                      transform: "scale(1.01)",
-                    },
-                    borderBottom: "1px solid rgba(255,255,255,0.05)",
-                    background: isTopThree
-                      ? "linear-gradient(90deg, rgba(123, 44, 191, 0.15), transparent)"
-                      : "transparent",
-                  }}
-                >
-                  <TableCell
-                    sx={{
-                      color: "var(--text)",
-                      fontWeight: 700,
-                      fontSize: isTopThree ? "1.2rem" : "1rem",
-                      py: 2,
-                    }}
-                  >
-                    {isTopThree ? medals[globalRank - 1] : globalRank}
-                  </TableCell>
-                  <TableCell
-                    sx={{
-                      color: "var(--text)",
-                      fontWeight: isTopThree ? 700 : 400,
-                      fontSize: isTopThree ? "1.1rem" : "1rem",
-                    }}
-                  >
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
-                      <Link
-                        href={`/celeb/${celeb.id}`}
-                        style={{
-                          color: "var(--text)",
-                          textDecoration: "none",
-                          fontWeight: isTopThree ? 700 : 400,
-                        }}
-                      >
-                        {celeb.name}
-                      </Link>
-                      {Boolean((celeb as any).confirmedVaper) && (
-                        <Box
-                          component="span"
-                          sx={{
-                            px: 1,
-                            py: 0.25,
-                            borderRadius: 999,
-                            fontSize: "0.7rem",
-                            fontWeight: 700,
-                            color: "white",
-                            background: "linear-gradient(135deg, #7B2CBF 0%, #FF006E 100%)",
-                            boxShadow: "0 4px 12px rgba(199, 21, 133, 0.35)",
-                          }}
-                        >
-                          Confirmed
-                        </Box>
-                      )}
-                      {(() => {
-                        const yesVotes = celeb.confirmedVaperYesVotes ?? 0;
-                        const noVotes = celeb.confirmedVaperNoVotes ?? 0;
-                        const { isLikelyVaper } = getVaperLikelihood(yesVotes, noVotes);
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", md: "repeat(3, 1fr)" },
+              gap: 2.5,
+            }}
+          >
+            {celebrities.map((celeb) => (
+              <RankingCard key={celeb.id} celeb={celeb} rank={celeb.rank} />
+            ))}
+          </Box>
 
-                        if (isLikelyVaper && !Boolean((celeb as any).confirmedVaper)) {
-                          return (
-                            <Box
-                              component="span"
-                              sx={{
-                                px: 1,
-                                py: 0.25,
-                                borderRadius: 999,
-                                fontSize: "0.7rem",
-                                fontWeight: 700,
-                                color: "white",
-                                background: "linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%)",
-                                boxShadow: "0 4px 12px rgba(76, 175, 80, 0.35)",
-                              }}
-                            >
-                              Likely Vaper
-                            </Box>
-                          );
-                        }
-                        return null;
-                      })()}
-                    </Box>
-                  </TableCell>
-                  <TableCell
-                    align="right"
-                    sx={{
-                      color: isTopThree ? "var(--primary)" : "var(--text)",
-                      fontWeight: 700,
-                      fontSize: isTopThree ? "1.1rem" : "1rem",
-                    }}
-                  >
-                    {(celeb.elo ?? 1000).toFixed(0)}
-                  </TableCell>
-                  <TableCell
-                    align="right"
-                    sx={{
-                      color: "rgba(248, 249, 250, 0.8)",
-                      fontWeight: 500,
-                    }}
-                  >
-                    {celeb.wins ?? 0}
-                  </TableCell>
-                  <TableCell
-                    align="right"
-                    sx={{
-                      color: "rgba(248, 249, 250, 0.8)",
-                      fontWeight: 500,
-                    }}
-                  >
-                    {celeb.matches ?? 0}
-                  </TableCell>
-                  <TableCell
-                    align="right"
-                    sx={{
-                      color: "var(--secondary)",
-                      fontWeight: 600,
-                    }}
-                  >
-                    {celeb.matches && celeb.matches > 0
-                      ? ((((celeb.wins ?? 0) / celeb.matches) * 100).toFixed(1) + "%")
-                      : "N/A"}
-                  </TableCell>
-                  <TableCell
-                    align="center"
-                    sx={{
-                      color: "rgba(248, 249, 250, 0.8)",
-                    }}
-                  >
-                    {(() => {
-                      const yesVotes = celeb.confirmedVaperYesVotes ?? 0;
-                      const noVotes = celeb.confirmedVaperNoVotes ?? 0;
-                      const { isLikelyVaper, percentage, totalVotes } = getVaperLikelihood(yesVotes, noVotes);
-
-                      if (totalVotes === 0) {
-                        return (
-                          <Typography variant="body2" sx={{ color: "rgba(248, 249, 250, 0.4)" }}>
-                            No votes
-                          </Typography>
-                        );
-                      }
-
-                      return (
-                        <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 0.5 }}>
-                          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                            {isLikelyVaper && (
-                              <CheckCircleIcon
-                                sx={{
-                                  fontSize: "1rem",
-                                  color: "#4CAF50",
-                                }}
-                              />
-                            )}
-                            <Typography
-                              variant="body2"
-                              sx={{
-                                fontWeight: 700,
-                                color: isLikelyVaper ? "#4CAF50" : "rgba(248, 249, 250, 0.6)",
-                              }}
-                            >
-                              {percentage.toFixed(0)}%
-                            </Typography>
-                          </Box>
-                          <Typography
-                            variant="caption"
-                            sx={{
-                              fontSize: "0.7rem",
-                              color: "rgba(248, 249, 250, 0.5)",
-                            }}
-                          >
-                            {yesVotes}👍 / {noVotes}👎
-                          </Typography>
-                        </Box>
-                      );
-                    })()}
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
-      </TableContainer>
-          )}
-
-          {filteredCelebrities.length > 0 && (
-            <RankingsPagination totalPages={totalPages} currentPage={currentPage} />
-          )}
+          <RankingsPagination
+            page={page}
+            hasNext={Boolean(nextCursor)}
+            hasPrev={cursorStack.length > 0}
+            isLoading={isLoading}
+            onNext={handleNext}
+            onPrev={handlePrev}
+          />
         </>
+      )}
+
+      {isLoading && celebrities.length > 0 && (
+        <Box sx={{ display: "flex", justifyContent: "center", mt: 3 }}>
+          <CircularProgress size={28} />
+        </Box>
       )}
     </Container>
   );
@@ -481,22 +384,13 @@ function RankingsContent() {
 
 export default function RankingsPage() {
   return (
-    <Suspense
-      fallback={
-        <Container maxWidth="lg" sx={{ py: 6 }}>
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              minHeight: "50vh",
-            }}
-          >
-            <CircularProgress />
-          </Box>
-        </Container>
-      }
-    >
+    <Suspense fallback={
+      <Container maxWidth="lg" sx={{ py: 6 }}>
+        <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "50vh" }}>
+          <CircularProgress />
+        </Box>
+      </Container>
+    }>
       <RankingsContent />
     </Suspense>
   );
