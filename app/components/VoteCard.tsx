@@ -73,7 +73,9 @@ export function VoteCard({
           setBio(data.bio);
         }
       })
-      .catch(() => {})
+      .catch((err) => {
+        console.error("Failed to load Wikipedia data:", err);
+      })
       .finally(() => {
         if (active) setLoadingImg(false);
       });
