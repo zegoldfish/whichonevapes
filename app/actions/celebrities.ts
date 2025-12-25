@@ -27,7 +27,8 @@ function decodeCursor(cursor?: string | null): Record<string, unknown> | undefin
   if (!cursor) return undefined;
   try {
     return JSON.parse(Buffer.from(cursor, "base64url").toString("utf8")) as Record<string, unknown>;
-  } catch {
+  } catch (error) {
+    console.error("Failed to decode pagination cursor:", error);
     return undefined;
   }
 }
