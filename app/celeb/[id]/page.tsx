@@ -35,9 +35,6 @@ export default async function CelebrityPage({
         >
           {celeb.name}
         </Typography>
-        <Typography variant="body2" sx={{ color: "rgba(248, 249, 250, 0.7)" }}>
-          Single card preview
-        </Typography>
       </Box>
 
       <ClientCelebrityCard celebrity={celeb} />
