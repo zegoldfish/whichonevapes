@@ -284,9 +284,6 @@ function RankingsContent() {
         >
           Elo Rankings
         </Typography>
-        <Typography variant="h6" sx={{ color: COLORS.text.secondary, fontWeight: 500 }}>
-          Browse ranked celebrities without downloading the whole list.
-        </Typography>
       </Box>
 
       <Box sx={{ mb: 3, display: "flex", justifyContent: "center" }}>
