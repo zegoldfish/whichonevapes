@@ -286,3 +286,63 @@ export async function getCelebrityWikipediaData(pageId: string): Promise<{
     image: wikiData.image,
   };
 }
+
+// Vote on whether a celebrity is a confirmed vaper
+export async function voteConfirmedVaper(params: {
+  celebrityId: string;
+  isVaper: boolean; // true for "yes, confirmed vaper", false for "no, not a vaper"
+}): Promise<{ yesVotes: number; noVotes: number }> {
+  const schema = z.object({
+    celebrityId: z.string().uuid(),
+    isVaper: z.boolean(),
+  });
+  const { celebrityId, isVaper } = schema.parse(params);
+
+  // Per-IP rate limit to reduce vote abuse
+  let clientIp = "unknown";
+  try {
+    const headerList = await headers();
+    clientIp = (headerList.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+               headerList.get("x-real-ip") ||
+               "unknown") as string;
+  } catch {
+    // If headers are unavailable, fall back to unknown
+  }
+  const { ok, retryAfterMs } = rateLimit({ 
+    key: `vaper-vote:${clientIp}`, 
+    windowMs: 60_000, 
+    max: 20 
+  });
+  if (!ok) {
+    const waitSeconds = Math.max(1, Math.ceil((retryAfterMs || 0) / 1000));
+    throw new Error(`Rate limit exceeded. Try again in ${waitSeconds}s.`);
+  }
+
+  // Update the vote count
+  const now = new Date().toISOString();
+  const voteAttribute = isVaper ? "confirmedVaperYesVotes" : "confirmedVaperNoVotes";
+  
+  const result = await ddb.send(
+    new UpdateCommand({
+      TableName: CELEBRITIES_TABLE_NAME,
+      Key: { id: celebrityId },
+      UpdateExpression: `SET updatedAt = :now ADD ${voteAttribute} :one`,
+      ExpressionAttributeValues: {
+        ":now": now,
+        ":one": 1,
+      },
+      ConditionExpression: "attribute_exists(id)",
+      ReturnValues: "ALL_NEW",
+    })
+  );
+
+  const updated = result.Attributes as Celebrity;
+  
+  // Invalidate cache for this celebrity
+  cachedCelebrities = cachedCelebrities.filter((c) => c.id !== celebrityId);
+
+  return {
+    yesVotes: updated.confirmedVaperYesVotes ?? 0,
+    noVotes: updated.confirmedVaperNoVotes ?? 0,
+  };
+}

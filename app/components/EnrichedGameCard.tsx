@@ -10,9 +10,13 @@ import {
   CircularProgress,
   Typography,
   Skeleton,
+  IconButton,
+  Tooltip,
 } from "@mui/material";
+import ThumbUpIcon from "@mui/icons-material/ThumbUp";
+import ThumbDownIcon from "@mui/icons-material/ThumbDown";
 import { type Celebrity } from "@/types/celebrity";
-import { getCelebrityWikipediaData } from "@/app/actions/celebrities";
+import { getCelebrityWikipediaData, voteConfirmedVaper } from "@/app/actions/celebrities";
 
 interface EnrichedGameCardProps {
   celebrity: Celebrity;
@@ -39,6 +43,12 @@ export function EnrichedGameCard({
   const [loadingImage, setLoadingImage] = useState(false);
   const [loadingBio, setLoadingBio] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [vaperVotes, setVaperVotes] = useState({
+    yes: celebrity.confirmedVaperYesVotes ?? 0,
+    no: celebrity.confirmedVaperNoVotes ?? 0,
+  });
+  const [isVotingVaper, setIsVotingVaper] = useState(false);
+  const [vaperVoteError, setVaperVoteError] = useState<string | null>(null);
 
   // Reset local state when the celebrity changes to avoid stale data
   useEffect(() => {
@@ -47,7 +57,12 @@ export function EnrichedGameCard({
     setError(null);
     setLoadingImage(false);
     setLoadingBio(false);
-  }, [celebrity.id]);
+    setVaperVotes({
+      yes: celebrity.confirmedVaperYesVotes ?? 0,
+      no: celebrity.confirmedVaperNoVotes ?? 0,
+    });
+    setVaperVoteError(null);
+  }, [celebrity.id, celebrity.confirmedVaperYesVotes, celebrity.confirmedVaperNoVotes]);
 
   const confirmed = Boolean((celebrity as any).confirmedVaper);
 
@@ -130,6 +145,25 @@ export function EnrichedGameCard({
   // Use existing data if available, otherwise use fetched data
   const displayImage = celebrity.image || wikiData?.image;
   const displayBio = celebrity.bio || wikiData?.bio;
+
+  const handleVaperVote = async (isVaper: boolean) => {
+    setIsVotingVaper(true);
+    setVaperVoteError(null);
+    try {
+      const result = await voteConfirmedVaper({
+        celebrityId: celebrity.id,
+        isVaper,
+      });
+      setVaperVotes({
+        yes: result.yesVotes,
+        no: result.noVotes,
+      });
+    } catch (err) {
+      setVaperVoteError(err instanceof Error ? err.message : "Failed to vote");
+    } finally {
+      setIsVotingVaper(false);
+    }
+  };
 
   return (
     <Box
@@ -378,6 +412,121 @@ export function EnrichedGameCard({
                 {celebrity.matches ?? 0}
               </Typography>
             </Box>
+          </Box>
+          
+          {/* Confirmed Vaper Voting Section */}
+          <Box
+            sx={{
+              mt: 3,
+              pt: 3,
+              borderTop: "1px solid rgba(255, 255, 255, 0.1)",
+            }}
+          >
+            <Typography 
+              variant="caption" 
+              sx={{ 
+                color: "rgba(248, 249, 250, 0.5)",
+                textTransform: "uppercase",
+                letterSpacing: "0.1em",
+                fontSize: "0.7rem",
+                display: "block",
+                mb: 2,
+                textAlign: "center",
+              }}
+            >
+              Confirmed Vaper?
+            </Typography>
+            
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                gap: 3,
+              }}
+            >
+              <Tooltip title="Yes, confirmed vaper" arrow>
+                <Box sx={{ textAlign: "center" }}>
+                  <IconButton
+                    onClick={() => handleVaperVote(true)}
+                    disabled={isVotingVaper}
+                    sx={{
+                      background: "linear-gradient(135deg, rgba(76, 175, 80, 0.2) 0%, rgba(56, 142, 60, 0.2) 100%)",
+                      border: "1px solid rgba(76, 175, 80, 0.3)",
+                      transition: "all 0.3s ease",
+                      "&:hover": {
+                        background: "linear-gradient(135deg, rgba(76, 175, 80, 0.4) 0%, rgba(56, 142, 60, 0.4) 100%)",
+                        transform: "translateY(-2px)",
+                        boxShadow: "0 6px 16px rgba(76, 175, 80, 0.4)",
+                      },
+                      "&:disabled": {
+                        opacity: 0.5,
+                      },
+                    }}
+                  >
+                    <ThumbUpIcon sx={{ color: "#4CAF50" }} />
+                  </IconButton>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      mt: 1,
+                      fontWeight: 700,
+                      color: "#4CAF50",
+                    }}
+                  >
+                    {vaperVotes.yes}
+                  </Typography>
+                </Box>
+              </Tooltip>
+              
+              <Tooltip title="No, not a vaper" arrow>
+                <Box sx={{ textAlign: "center" }}>
+                  <IconButton
+                    onClick={() => handleVaperVote(false)}
+                    disabled={isVotingVaper}
+                    sx={{
+                      background: "linear-gradient(135deg, rgba(244, 67, 54, 0.2) 0%, rgba(211, 47, 47, 0.2) 100%)",
+                      border: "1px solid rgba(244, 67, 54, 0.3)",
+                      transition: "all 0.3s ease",
+                      "&:hover": {
+                        background: "linear-gradient(135deg, rgba(244, 67, 54, 0.4) 0%, rgba(211, 47, 47, 0.4) 100%)",
+                        transform: "translateY(-2px)",
+                        boxShadow: "0 6px 16px rgba(244, 67, 54, 0.4)",
+                      },
+                      "&:disabled": {
+                        opacity: 0.5,
+                      },
+                    }}
+                  >
+                    <ThumbDownIcon sx={{ color: "#F44336" }} />
+                  </IconButton>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      mt: 1,
+                      fontWeight: 700,
+                      color: "#F44336",
+                    }}
+                  >
+                    {vaperVotes.no}
+                  </Typography>
+                </Box>
+              </Tooltip>
+            </Box>
+            
+            {vaperVoteError && (
+              <Typography
+                variant="caption"
+                sx={{
+                  display: "block",
+                  mt: 2,
+                  color: "#F44336",
+                  textAlign: "center",
+                }}
+              >
+                {vaperVoteError}
+              </Typography>
+            )}
           </Box>
           
         </CardContent>
