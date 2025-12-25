@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, type MouseEvent } from "react";
 import Image from "next/image";
 import {
   Card,
@@ -164,6 +164,16 @@ export function EnrichedGameCard({
     } finally {
       setIsVotingVaper(false);
     }
+  };
+
+  const handlePrimaryVoteClick = (e: MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation();
+    onVote();
+  };
+
+  const handleVaperVoteClick = (isVaper: boolean) => (e: MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation();
+    handleVaperVote(isVaper);
   };
 
   const { isLikelyVaper } = getVaperLikelihood(vaperVotes.yes, vaperVotes.no);
@@ -473,7 +483,7 @@ export function EnrichedGameCard({
               <Tooltip title="Yes, confirmed vaper" arrow>
                 <Box sx={{ textAlign: "center" }}>
                   <IconButton
-                    onClick={() => handleVaperVote(true)}
+                    onClick={handleVaperVoteClick(true)}
                     disabled={isVotingVaper}
                     sx={{
                       background: "linear-gradient(135deg, rgba(76, 175, 80, 0.2) 0%, rgba(56, 142, 60, 0.2) 100%)",
@@ -507,7 +517,7 @@ export function EnrichedGameCard({
               <Tooltip title="No, not a vaper" arrow>
                 <Box sx={{ textAlign: "center" }}>
                   <IconButton
-                    onClick={() => handleVaperVote(false)}
+                    onClick={handleVaperVoteClick(false)}
                     disabled={isVotingVaper}
                     sx={{
                       background: "linear-gradient(135deg, rgba(244, 67, 54, 0.2) 0%, rgba(211, 47, 47, 0.2) 100%)",
@@ -560,7 +570,7 @@ export function EnrichedGameCard({
       {!readOnly && (
         <Button
           variant="contained"
-          onClick={onVote}
+          onClick={handlePrimaryVoteClick}
           disabled={isVoting}
           sx={{
             mt: 3,
