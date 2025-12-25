@@ -17,6 +17,21 @@ import { fetchWikipediaData } from "@/lib/wikipedia";
 import { rateLimit } from "@/lib/rateLimit";
 import { headers } from "next/headers";
 
+// DynamoDB cursor helpers (base64url-encoded JSON)
+function encodeCursor(key?: Record<string, unknown> | null): string | undefined {
+  if (!key) return undefined;
+  return Buffer.from(JSON.stringify(key)).toString("base64url");
+}
+
+function decodeCursor(cursor?: string | null): Record<string, unknown> | undefined {
+  if (!cursor) return undefined;
+  try {
+    return JSON.parse(Buffer.from(cursor, "base64url").toString("utf8")) as Record<string, unknown>;
+  } catch {
+    return undefined;
+  }
+}
+
 // Record a head-to-head vote between two celebrities using Elo
 export async function voteBetweenCelebrities(params: {
   celebAId: string;
@@ -78,12 +93,13 @@ export async function voteBetweenCelebrities(params: {
             TableName: CELEBRITIES_TABLE_NAME,
             Key: { id: a.id },
             UpdateExpression:
-              "SET elo = :elo, updatedAt = :now ADD wins :wins, matches :one",
+              "SET elo = :elo, updatedAt = :now, rankPartition = if_not_exists(rankPartition, :pk) ADD wins :wins, matches :one",
             ExpressionAttributeValues: {
               ":elo": da.newElo,
               ":wins": da.winsDelta,
               ":one": 1,
               ":now": now,
+              ":pk": ELO_GSI_PARTITION_VALUE,
             },
             ConditionExpression: "attribute_exists(id)",
           },
@@ -93,12 +109,13 @@ export async function voteBetweenCelebrities(params: {
             TableName: CELEBRITIES_TABLE_NAME,
             Key: { id: b.id },
             UpdateExpression:
-              "SET elo = :elo, updatedAt = :now ADD wins :wins, matches :one",
+              "SET elo = :elo, updatedAt = :now, rankPartition = if_not_exists(rankPartition, :pk) ADD wins :wins, matches :one",
             ExpressionAttributeValues: {
               ":elo": db.newElo,
               ":wins": db.winsDelta,
               ":one": 1,
               ":now": now,
+              ":pk": ELO_GSI_PARTITION_VALUE,
             },
             ConditionExpression: "attribute_exists(id)",
           },
@@ -129,6 +146,86 @@ export async function getAllCelebrities(): Promise<Celebrity[]> {
 
   // Sort by ELO descending
   return items.sort((a, b) => (b.elo ?? 1000) - (a.elo ?? 1000));
+}
+
+const ELO_GSI_NAME = "elo-gsi";
+const ELO_GSI_PARTITION_VALUE = process.env.CELEBRITIES_ELO_PARTITION || "GLOBAL";
+
+// Paginated fetch of ranked celebrities (cursor-based)
+export async function getRankedCelebritiesPage(params: {
+  pageSize?: number;
+  cursor?: string | null;
+  search?: string | null;
+}): Promise<{
+  items: Celebrity[];
+  nextCursor?: string;
+}> {
+  const schema = z.object({
+    pageSize: z.number().int().min(1).max(100).optional(),
+    cursor: z.string().optional().nullable(),
+    search: z.string().optional().nullable(),
+  });
+
+  const { pageSize = 24, cursor, search } = schema.parse(params);
+  const normalizedSearch = search?.trim().toLowerCase() || "";
+
+  let exclusiveStartKey = decodeCursor(cursor);
+  const items: Celebrity[] = [];
+  let lastEvaluatedKey: Record<string, unknown> | undefined;
+
+  const fetchPage = async () => {
+    if (ELO_GSI_NAME) {
+      return ddb.send(
+        new QueryCommand({
+          TableName: CELEBRITIES_TABLE_NAME,
+          IndexName: ELO_GSI_NAME,
+          KeyConditionExpression: "rankPartition = :pk",
+          ExpressionAttributeValues: {
+            ":pk": ELO_GSI_PARTITION_VALUE,
+          },
+          Limit: pageSize,
+          ExclusiveStartKey: exclusiveStartKey,
+          ScanIndexForward: false, // highest elo first
+        })
+      );
+    }
+
+    return ddb.send(
+      new ScanCommand({
+        TableName: CELEBRITIES_TABLE_NAME,
+        Limit: pageSize,
+        ExclusiveStartKey: exclusiveStartKey,
+      })
+    );
+  };
+
+  // Keep fetching until we have enough items (or exhaust table)
+  while (items.length < pageSize) {
+    const result = await fetchPage();
+
+    const pageItems = (result.Items || []) as Celebrity[];
+    const filtered = normalizedSearch
+      ? pageItems.filter((item) => item.name?.toLowerCase().includes(normalizedSearch))
+      : pageItems;
+
+    items.push(...filtered);
+    lastEvaluatedKey = result.LastEvaluatedKey as Record<string, unknown> | undefined;
+
+    if (!lastEvaluatedKey) {
+      break;
+    }
+
+    exclusiveStartKey = lastEvaluatedKey;
+  }
+
+  const ordered = ELO_GSI_NAME
+    ? items.slice(0, pageSize) // already sorted by GSI
+    : items.sort((a, b) => (b.elo ?? 1000) - (a.elo ?? 1000)).slice(0, pageSize);
+
+  return {
+    items: ordered,
+    nextCursor: encodeCursor(lastEvaluatedKey),
+  };
 }
 
 // Simple in-memory cache for celebrity list (refreshed periodically)
