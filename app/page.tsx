@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import Container from "@mui/material/Container";
 import Grid from "@mui/material/Grid";
@@ -9,10 +9,12 @@ import Box from "@mui/material/Box";
 import CircularProgress from "@mui/material/CircularProgress";
 import Alert from "@mui/material/Alert";
 import Typography from "@mui/material/Typography";
+import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
 import { EnrichedGameCard } from "./components/EnrichedGameCard";
 import GameCardSkeleton from "./components/GameCardSkeleton";
 import { type Celebrity } from "@/types/celebrity";
 import { voteBetweenCelebrities, getRandomCelebrityPair } from "./actions/celebrities";
+import html2canvas from "html2canvas";
 
 function HomeContent() {
   const searchParams = useSearchParams();
@@ -24,6 +26,8 @@ function HomeContent() {
   const [voteFeedback, setVoteFeedback] = useState<"A" | "B" | null>(null);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  const [screenshotLoading, setScreenshotLoading] = useState(false);
+  const matchupRef = useRef<HTMLDivElement>(null);
 
   // Prefetch next pair in background
   const prefetchNextPair = async () => {
@@ -162,6 +166,39 @@ function HomeContent() {
     }
   };
 
+  const takeScreenshot = async () => {
+    if (!matchupRef.current) return;
+    
+    try {
+      setScreenshotLoading(true);
+      const canvas = await html2canvas(matchupRef.current, {
+        backgroundColor: "#0A1128",
+        scale: 2,
+        allowTaint: true,
+        useCORS: true,
+      });
+      
+      // Convert canvas to blob and download
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `matchup-${new Date().getTime()}.png`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        }
+      });
+    } catch (err) {
+      console.error("Failed to take screenshot:", err);
+      setError("Failed to capture screenshot");
+    } finally {
+      setScreenshotLoading(false);
+    }
+  };
+
   return (
     <Container maxWidth="lg">
       <Box sx={{ py: 6 }}>
@@ -228,6 +265,34 @@ function HomeContent() {
           >
             New Pair
           </Button>
+          <Button
+            variant="outlined"
+            onClick={takeScreenshot}
+            disabled={!pair || loading || screenshotLoading}
+            startIcon={<PhotoCameraIcon />}
+            sx={{
+              borderColor: "rgba(123, 44, 191, 0.5)",
+              color: "var(--text)",
+              borderRadius: 2,
+              px: 3,
+              py: 1.5,
+              backdropFilter: "blur(10px)",
+              background: "rgba(255, 255, 255, 0.03)",
+              transition: "all 0.3s ease",
+              "&:hover": {
+                borderColor: "var(--primary)",
+                background: "rgba(123, 44, 191, 0.1)",
+                transform: "translateY(-2px)",
+                boxShadow: "0 8px 20px rgba(123, 44, 191, 0.3)",
+              },
+              "&:disabled": {
+                opacity: 0.5,
+                cursor: "not-allowed",
+              },
+            }}
+          >
+            {screenshotLoading ? "Capturing..." : "Screenshot"}
+          </Button>
         </Box>
 
         <Box
@@ -254,6 +319,7 @@ function HomeContent() {
         )}
 
         <Grid
+          ref={matchupRef}
           container
           spacing={{ xs: 3, md: 6 }}
           justifyContent="center"
