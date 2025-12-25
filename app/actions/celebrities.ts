@@ -18,18 +18,25 @@ import { rateLimit } from "@/lib/rateLimit";
 import { headers } from "next/headers";
 
 // DynamoDB cursor helpers (base64url-encoded JSON)
-function encodeCursor(key?: Record<string, unknown> | null): string | undefined {
+function encodeCursor(key?: Record<string, unknown> | null, rankOffset?: number): string | undefined {
   if (!key) return undefined;
-  return Buffer.from(JSON.stringify(key)).toString("base64url");
+  const cursorData = { key, rankOffset: rankOffset || 0 };
+  return Buffer.from(JSON.stringify(cursorData)).toString("base64url");
 }
 
-function decodeCursor(cursor?: string | null): Record<string, unknown> | undefined {
-  if (!cursor) return undefined;
+function decodeCursor(cursor?: string | null): { key?: Record<string, unknown>; rankOffset: number } {
+  if (!cursor) return { rankOffset: 0 };
   try {
-    return JSON.parse(Buffer.from(cursor, "base64url").toString("utf8")) as Record<string, unknown>;
+    const decoded = JSON.parse(Buffer.from(cursor, "base64url").toString("utf8"));
+    // Handle old cursor format (just the key) and new format (key + rankOffset)
+    if (decoded.key !== undefined) {
+      return { key: decoded.key, rankOffset: decoded.rankOffset || 0 };
+    }
+    // Old format: cursor is just the key
+    return { key: decoded, rankOffset: 0 };
   } catch (error) {
     console.error("Failed to decode pagination cursor:", error);
-    return undefined;
+    return { rankOffset: 0 };
   }
 }
 
@@ -170,12 +177,12 @@ export async function getRankedCelebritiesPage(params: {
   const { pageSize = 24, cursor, search } = schema.parse(params);
   const normalizedSearch = search?.trim().toLowerCase() || "";
 
-  let exclusiveStartKey = decodeCursor(cursor);
+  const { key: exclusiveStartKey, rankOffset } = decodeCursor(cursor);
   const items: Array<Celebrity & { rank: number }> = [];
-  let lastEvaluatedKey: Record<string, unknown> | undefined;
+  let lastEvaluatedKey: Record<string, unknown> | undefined = exclusiveStartKey;
   const MAX_PAGE_FETCHES = 10; // Limit DynamoDB reads to prevent excessive costs
   let pagesFetched = 0;
-  let currentRank = 0; // Track actual rank position in full dataset
+  let currentRank = rankOffset; // Start from the rank offset in cursor
 
   const fetchPage = async () => {
     return ddb.send(
@@ -187,7 +194,7 @@ export async function getRankedCelebritiesPage(params: {
           ":pk": ELO_GSI_PARTITION_VALUE,
         },
         Limit: pageSize,
-        ExclusiveStartKey: exclusiveStartKey,
+        ExclusiveStartKey: lastEvaluatedKey,
         ScanIndexForward: false, // highest elo first
       })
     );
@@ -219,13 +226,11 @@ export async function getRankedCelebritiesPage(params: {
     if (!lastEvaluatedKey) {
       break;
     }
-
-    exclusiveStartKey = lastEvaluatedKey;
   }
 
   return {
     items: items.slice(0, pageSize), // already sorted by GSI
-    nextCursor: encodeCursor(lastEvaluatedKey),
+    nextCursor: encodeCursor(lastEvaluatedKey, currentRank),
   };
 }
 
