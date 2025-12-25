@@ -22,6 +22,7 @@ import {
 import SearchIcon from "@mui/icons-material/Search";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import RankingsPagination from "@/app/components/RankingsPagination";
+import { getVaperLikelihood } from "@/lib/vaper";
 import { type Celebrity } from "@/types/celebrity";
 
 const ITEMS_PER_PAGE = 50;
@@ -344,31 +345,26 @@ function RankingsContent() {
                       {(() => {
                         const yesVotes = celeb.confirmedVaperYesVotes ?? 0;
                         const noVotes = celeb.confirmedVaperNoVotes ?? 0;
-                        const totalVotes = yesVotes + noVotes;
-                        
-                        if (totalVotes >= 10) {
-                          const percentage = (yesVotes / totalVotes) * 100;
-                          const isLikelyVaper = percentage >= 60;
-                          
-                          if (isLikelyVaper && !Boolean((celeb as any).confirmedVaper)) {
-                            return (
-                              <Box
-                                component="span"
-                                sx={{
-                                  px: 1,
-                                  py: 0.25,
-                                  borderRadius: 999,
-                                  fontSize: "0.7rem",
-                                  fontWeight: 700,
-                                  color: "white",
-                                  background: "linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%)",
-                                  boxShadow: "0 4px 12px rgba(76, 175, 80, 0.35)",
-                                }}
-                              >
-                                Likely Vaper
-                              </Box>
-                            );
-                          }
+                        const { isLikelyVaper } = getVaperLikelihood(yesVotes, noVotes);
+
+                        if (isLikelyVaper && !Boolean((celeb as any).confirmedVaper)) {
+                          return (
+                            <Box
+                              component="span"
+                              sx={{
+                                px: 1,
+                                py: 0.25,
+                                borderRadius: 999,
+                                fontSize: "0.7rem",
+                                fontWeight: 700,
+                                color: "white",
+                                background: "linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%)",
+                                boxShadow: "0 4px 12px rgba(76, 175, 80, 0.35)",
+                              }}
+                            >
+                              Likely Vaper
+                            </Box>
+                          );
                         }
                         return null;
                       })()}
@@ -422,8 +418,8 @@ function RankingsContent() {
                     {(() => {
                       const yesVotes = celeb.confirmedVaperYesVotes ?? 0;
                       const noVotes = celeb.confirmedVaperNoVotes ?? 0;
-                      const totalVotes = yesVotes + noVotes;
-                      
+                      const { isLikelyVaper, percentage, totalVotes } = getVaperLikelihood(yesVotes, noVotes);
+
                       if (totalVotes === 0) {
                         return (
                           <Typography variant="body2" sx={{ color: "rgba(248, 249, 250, 0.4)" }}>
@@ -431,10 +427,7 @@ function RankingsContent() {
                           </Typography>
                         );
                       }
-                      
-                      const percentage = (yesVotes / totalVotes) * 100;
-                      const isLikelyVaper = percentage >= 60;
-                      
+
                       return (
                         <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 0.5 }}>
                           <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
