@@ -10,6 +10,7 @@ import CircularProgress from "@mui/material/CircularProgress";
 import Alert from "@mui/material/Alert";
 import Typography from "@mui/material/Typography";
 import { EnrichedGameCard } from "./components/EnrichedGameCard";
+import GameCardSkeleton from "./components/GameCardSkeleton";
 import { type Celebrity } from "@/types/celebrity";
 import { voteBetweenCelebrities, getRandomCelebrityPair } from "./actions/celebrities";
 
@@ -252,29 +253,27 @@ function HomeContent() {
           </Alert>
         )}
 
-        {loading ? (
-          <Box sx={{ display: "flex", justifyContent: "center", py: 10 }}>
-            <CircularProgress />
-          </Box>
-        ) : pair ? (
-          <Grid
-            container
-            spacing={{ xs: 3, md: 6 }}
-            justifyContent="center"
-            alignItems="stretch"
-            onTouchStart={onTouchStart}
-            onTouchMove={onTouchMove}
-            onTouchEnd={onTouchEnd}
-            sx={{
-              minHeight: "60vh",
-              animation: "slideUp 0.6s ease-out",
-              "@keyframes slideUp": {
-                from: { opacity: 0, transform: "translateY(30px)" },
-                to: { opacity: 1, transform: "translateY(0)" },
-              },
-            }}
-          >
-            <Grid size={{ xs: 12, md: 6 }}>
+        <Grid
+          container
+          spacing={{ xs: 3, md: 6 }}
+          justifyContent="center"
+          alignItems="stretch"
+          onTouchStart={onTouchStart}
+          onTouchMove={onTouchMove}
+          onTouchEnd={onTouchEnd}
+          sx={{
+            minHeight: "60vh",
+            animation: "slideUp 0.6s ease-out",
+            "@keyframes slideUp": {
+              from: { opacity: 0, transform: "translateY(30px)" },
+              to: { opacity: 1, transform: "translateY(0)" },
+            },
+          }}
+        >
+          <Grid size={{ xs: 12, md: 6 }}>
+            {loading || !pair ? (
+              <GameCardSkeleton position="left" />
+            ) : (
               <EnrichedGameCard
                 key={pair.a.id}
                 celebrity={pair.a}
@@ -283,8 +282,12 @@ function HomeContent() {
                 position="left"
                 voteState={voteFeedback === "A" ? "winner" : voteFeedback === "B" ? "loser" : null}
               />
-            </Grid>
-            <Grid size={{ xs: 12, md: 6 }}>
+            )}
+          </Grid>
+          <Grid size={{ xs: 12, md: 6 }}>
+            {loading || !pair ? (
+              <GameCardSkeleton position="right" />
+            ) : (
               <EnrichedGameCard
                 key={pair.b.id}
                 celebrity={pair.b}
@@ -293,9 +296,9 @@ function HomeContent() {
                 position="right"
                 voteState={voteFeedback === "B" ? "winner" : voteFeedback === "A" ? "loser" : null}
               />
-            </Grid>
+            )}
           </Grid>
-        ) : null}
+        </Grid>
       </Box>
     </Container>
   );
