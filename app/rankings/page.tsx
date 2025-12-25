@@ -238,9 +238,13 @@ function RankingsContent() {
   useEffect(() => {
     if (!hasLoadedRef.current) {
       hasLoadedRef.current = true;
-      loadPage(initialCursor, []);
+      // On initial load, ignore any initialCursor when there is a search query,
+      // so searches always start from the first page.
+      const initialLoadCursor = searchQuery ? null : initialCursor;
+      loadPage(initialLoadCursor, []);
       return;
     }
+    // When the search query changes after the initial load, reset to the first page.
     loadPage(null, []);
   }, [searchQuery]);
 
