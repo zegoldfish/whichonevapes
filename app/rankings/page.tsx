@@ -21,6 +21,7 @@ import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import RankingsPagination from "@/app/components/RankingsPagination";
 import { getRankedCelebritiesPage } from "@/app/actions/celebrities";
 import { getVaperLikelihood } from "@/lib/vaper";
+import { eloPercentileFromRank, matchesPerDay, wilsonLowerBound, daysSince } from "@/lib/metrics";
 import { COLORS, GRADIENTS } from "@/lib/theme";
 import { type Celebrity } from "@/types/celebrity";
 
@@ -49,7 +50,7 @@ function StatPill({ label, value }: { label: string; value: string | number }) {
   );
 }
 
-function RankingCard({ celeb, rank }: { celeb: Celebrity; rank: number }) {
+function RankingCard({ celeb, rank, totalCount }: { celeb: Celebrity; rank: number; totalCount: number }) {
   const { isLikelyVaper, percentage } = getVaperLikelihood(
     celeb.confirmedVaperYesVotes,
     celeb.confirmedVaperNoVotes
@@ -60,6 +61,23 @@ function RankingCard({ celeb, rank }: { celeb: Celebrity; rank: number }) {
     const pct = ((celeb.wins ?? 0) / celeb.matches) * 100;
     return `${pct.toFixed(1)}% win rate`;
   }, [celeb.matches, celeb.wins]);
+
+  const winConfidence = useMemo(() => {
+    if (!celeb.matches || celeb.matches === 0) return null;
+    const lb = wilsonLowerBound(celeb.wins ?? 0, celeb.matches);
+    return `${(lb * 100).toFixed(1)}% win confidence`;
+  }, [celeb.matches, celeb.wins]);
+
+  const vaperConfidence = useMemo(() => {
+    const total = (celeb.confirmedVaperYesVotes ?? 0) + (celeb.confirmedVaperNoVotes ?? 0);
+    if (total === 0) return null;
+    const lb = wilsonLowerBound(celeb.confirmedVaperYesVotes ?? 0, total);
+    return `${(lb * 100).toFixed(1)}% vaper confidence`;
+  }, [celeb.confirmedVaperYesVotes, celeb.confirmedVaperNoVotes]);
+
+  const lastActiveDays = daysSince(celeb.updatedAt);
+  const matchRate = matchesPerDay(celeb.matches ?? 0, celeb.createdAt);
+  const eloPct = useMemo(() => eloPercentileFromRank(rank, totalCount), [rank, totalCount]);
 
   const medalColor = rank === 1 ? "#FFD166" : rank === 2 ? "#A0AEC0" : "#B2772B";
 
@@ -144,13 +162,22 @@ function RankingCard({ celeb, rank }: { celeb: Celebrity; rank: number }) {
       <Box
         sx={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
+          gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
           gap: 1,
         }}
       >
         <StatPill label="Wins" value={celeb.wins ?? 0} />
         <StatPill label="Matches" value={celeb.matches ?? 0} />
         <StatPill label="Win rate" value={winRate ?? "N/A"} />
+        {typeof eloPct === "number" && <StatPill label="Elo pct." value={`${eloPct.toFixed(1)}%`} />}
+        {winConfidence && <StatPill label="Win conf." value={winConfidence} />}
+        {typeof lastActiveDays === "number" && (
+          <StatPill label="Last active" value={`${lastActiveDays}d ago`} />
+        )}
+        {typeof matchRate === "number" && (
+          <StatPill label="Match rate" value={`${matchRate.toFixed(2)}/day`} />
+        )}
+        {vaperConfidence && <StatPill label="Vaper conf." value={vaperConfidence} />}
       </Box>
 
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -191,6 +218,8 @@ function RankingsContent() {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const hasLoadedRef = useRef(false);
+  const [totalCount, setTotalCount] = useState<number>(0);
+  const [sortBy, setSortBy] = useState<string>("elo");
 
   const page = cursorStack.length + 1;
   const isLoading = loading || isPending;
@@ -216,7 +245,7 @@ function RankingsContent() {
     setError(null);
     startTransition(async () => {
       try {
-        const { items, nextCursor: newNextCursor } = await getRankedCelebritiesPage({
+        const { items, nextCursor: newNextCursor, totalCount } = await getRankedCelebritiesPage({
           pageSize: PAGE_SIZE,
           cursor,
           search: searchQuery || null,
@@ -226,6 +255,7 @@ function RankingsContent() {
         setNextCursor(newNextCursor);
         setCursorStack(stack);
         setCurrentCursor(cursor || undefined);
+        setTotalCount(totalCount || 0);
         updateUrl(cursor, searchQuery);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load rankings");
@@ -289,14 +319,22 @@ function RankingsContent() {
         </Typography>
       </Box>
 
-      <Box sx={{ mb: 3, display: "flex", justifyContent: "center" }}>
+      <Box
+        sx={{
+          mb: 3,
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", sm: "1fr auto" },
+          gap: 2,
+          alignItems: "center",
+        }}
+      >
         <TextField
           placeholder="Search celebrities"
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
           variant="outlined"
           sx={{
-            width: { xs: "100%", sm: 420 },
+            width: "100%",
             "& .MuiOutlinedInput-root": {
               background: "rgba(255,255,255,0.04)",
               borderRadius: 3,
@@ -315,6 +353,34 @@ function RankingsContent() {
             ),
           }}
         />
+        <TextField
+          select
+          label="Sort"
+          size="small"
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value)}
+          sx={{
+            width: 220,
+            justifySelf: { xs: "stretch", sm: "end" },
+            "& .MuiOutlinedInput-root": {
+              background: "rgba(255,255,255,0.04)",
+              borderRadius: 3,
+              color: "var(--text)",
+              "& fieldset": { borderColor: "rgba(255,255,255,0.12)" },
+              "&:hover fieldset": { borderColor: "rgba(255,255,255,0.4)" },
+              "&.Mui-focused fieldset": { borderColor: COLORS.primary.light },
+            },
+            "& .MuiInputBase-input": { padding: "10px 12px" },
+            "& .MuiInputLabel-root": { color: COLORS.text.muted },
+            "& .MuiInputLabel-root.Mui-focused": { color: COLORS.primary.light },
+          }}
+          SelectProps={{ native: true }}
+        >
+          <option value="elo">Elo (desc)</option>
+          <option value="winConfidence">Win confidence</option>
+          <option value="matchRate">Match rate/day</option>
+          <option value="recent">Recent activity</option>
+        </TextField>
       </Box>
 
       {error && (
@@ -357,9 +423,31 @@ function RankingsContent() {
               gap: 2.5,
             }}
           >
-            {celebrities.map((celeb) => (
-              <RankingCard key={celeb.id} celeb={celeb} rank={celeb.rank} />
-            ))}
+            {([...celebrities]
+              .sort((a, b) => {
+                if (sortBy === "elo") {
+                  return (b.elo ?? 1000) - (a.elo ?? 1000);
+                }
+                if (sortBy === "winConfidence") {
+                  const wa = a.matches ? wilsonLowerBound(a.wins ?? 0, a.matches) : -1;
+                  const wb = b.matches ? wilsonLowerBound(b.wins ?? 0, b.matches) : -1;
+                  return wb - wa;
+                }
+                if (sortBy === "matchRate") {
+                  const ma = matchesPerDay(a.matches ?? 0, a.createdAt) ?? -1;
+                  const mb = matchesPerDay(b.matches ?? 0, b.createdAt) ?? -1;
+                  return (mb as number) - (ma as number);
+                }
+                if (sortBy === "recent") {
+                  const da = daysSince(a.updatedAt) ?? Number.POSITIVE_INFINITY;
+                  const db = daysSince(b.updatedAt) ?? Number.POSITIVE_INFINITY;
+                  return da - db; // smaller is more recent
+                }
+                return 0;
+              })
+              .map((celeb) => (
+                <RankingCard key={celeb.id} celeb={celeb} rank={celeb.rank} totalCount={totalCount} />
+              )))}
           </Box>
 
           <RankingsPagination

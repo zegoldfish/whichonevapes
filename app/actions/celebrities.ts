@@ -167,6 +167,7 @@ export async function getRankedCelebritiesPage(params: {
 }): Promise<{
   items: Array<Celebrity & { rank: number }>;
   nextCursor?: string;
+  totalCount: number;
 }> {
   const schema = z.object({
     pageSize: z.number().int().min(1).max(100).optional(),
@@ -228,9 +229,14 @@ export async function getRankedCelebritiesPage(params: {
     }
   }
 
+  // Compute total count using cached list (refreshed periodically)
+  const allCelebs = await getCachedCelebrities();
+  const totalCount = allCelebs.length;
+
   return {
     items: items.slice(0, pageSize), // already sorted by GSI
     nextCursor: encodeCursor(lastEvaluatedKey, currentRank),
+    totalCount,
   };
 }
 
