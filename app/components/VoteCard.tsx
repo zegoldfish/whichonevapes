@@ -1,6 +1,6 @@
 "use client";
 
-import { type MouseEvent } from "react";
+import { type MouseEvent, useState, useEffect } from "react";
 import Image from "next/image";
 import {
   Box,
@@ -42,11 +42,30 @@ export function VoteCard({
   pairedCelebrity,
   pairedCelebImg,
 }: VoteCardProps) {
-  const { imgSrc, bio, loading: loadingImg } = useWikipediaData({
+  const { imgSrc, fallbackImgSrc, bio, loading: loadingImg } = useWikipediaData({
     wikipediaPageId: celebrity.wikipediaPageId,
     initialImage: celebrity.image,
     initialBio: celebrity.bio,
   });
+
+  const [currentImgSrc, setCurrentImgSrc] = useState<string | null>(imgSrc);
+  const [imageError, setImageError] = useState(false);
+
+  // Update current image source when imgSrc changes
+  useEffect(() => {
+    if (imgSrc) {
+      setCurrentImgSrc(imgSrc);
+      setImageError(false);
+    }
+  }, [imgSrc]);
+
+  const handleImageError = () => {
+    if (!imageError && fallbackImgSrc && currentImgSrc !== fallbackImgSrc) {
+      console.warn(`Image failed to load: ${currentImgSrc}, falling back to: ${fallbackImgSrc}`);
+      setCurrentImgSrc(fallbackImgSrc);
+      setImageError(true);
+    }
+  };
 
   const { votes: vaperVotes, isVoting: isVotingVaper, error: vaperVoteError, handleVote } = useVaperVoting({
     celebrityId: celebrity.id,
@@ -111,13 +130,14 @@ export function VoteCard({
         }}
       >
         <Box sx={{ position: "relative", minHeight: { xs: 260, sm: 320 }, background: GRADIENTS.photoSection }}>
-          {imgSrc && (
+          {currentImgSrc && (
             <Image
-              src={imgSrc}
+              src={currentImgSrc}
               alt={celebrity.name}
               width={640}
               height={640}
               unoptimized
+              onError={handleImageError}
               style={{
                 width: "100%",
                 height: "100%",
@@ -156,7 +176,7 @@ export function VoteCard({
               }}
             />
           )}
-          {loadingImg && !imgSrc && (
+          {loadingImg && !currentImgSrc && (
             <Box
               sx={{
                 position: "absolute",
@@ -303,7 +323,7 @@ export function VoteCard({
               <MatchupShareButton
                 celebA={celebrity}
                 celebB={pairedCelebrity}
-                imgA={imgSrc}
+                imgA={currentImgSrc}
                 imgB={pairedCelebImg}
                 variant="button"
               />

@@ -491,11 +491,13 @@ export async function enrichCelebrityWithWikipedia(
 export async function getCelebrityWikipediaData(pageId: string): Promise<{
   bio: string | null;
   image: string | null;
+  fallbackImage?: string | null;
 }> {
   const wikiData = await fetchWikipediaData(pageId);
   return {
     bio: wikiData.bio,
     image: wikiData.image,
+    fallbackImage: wikiData.fallbackImage,
   };
 }
 

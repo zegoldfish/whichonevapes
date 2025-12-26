@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import {
   Box,
@@ -25,11 +26,30 @@ interface CelebrityProfileProps {
 }
 
 export function CelebrityProfile({ celebrity }: CelebrityProfileProps) {
-  const { imgSrc, bio, loading: loadingWikiData } = useWikipediaData({
+  const { imgSrc, fallbackImgSrc, bio, loading: loadingWikiData } = useWikipediaData({
     wikipediaPageId: celebrity.wikipediaPageId,
     initialImage: celebrity.image,
     initialBio: celebrity.bio,
   });
+
+  const [currentImgSrc, setCurrentImgSrc] = useState<string | null>(imgSrc);
+  const [imageError, setImageError] = useState(false);
+
+  // Update current image source when imgSrc changes
+  useEffect(() => {
+    if (imgSrc) {
+      setCurrentImgSrc(imgSrc);
+      setImageError(false);
+    }
+  }, [imgSrc]);
+
+  const handleImageError = () => {
+    if (!imageError && fallbackImgSrc && currentImgSrc !== fallbackImgSrc) {
+      console.warn(`Image failed to load: ${currentImgSrc}, falling back to: ${fallbackImgSrc}`);
+      setCurrentImgSrc(fallbackImgSrc);
+      setImageError(true);
+    }
+  };
 
   const { votes: vaperVotes, isVoting: isVotingVaper, error: vaperVoteError, handleVote } = useVaperVoting({
     celebrityId: celebrity.id,
@@ -63,7 +83,7 @@ export function CelebrityProfile({ celebrity }: CelebrityProfileProps) {
     >
       {/* Image Section */}
       <Box sx={{ position: "relative", minHeight: { xs: 280, sm: 360 }, background: GRADIENTS.photoSection }}>
-        {loadingWikiData && !imgSrc ? (
+        {loadingWikiData && !currentImgSrc ? (
           <Skeleton 
             variant="rectangular" 
             height={360} 
@@ -71,15 +91,16 @@ export function CelebrityProfile({ celebrity }: CelebrityProfileProps) {
               bgcolor: "rgba(255, 255, 255, 0.05)",
             }} 
           />
-        ) : imgSrc ? (
+        ) : currentImgSrc ? (
           <>
             <Image
-              src={imgSrc}
+              src={currentImgSrc}
               alt={celebrity.name}
               width={640}
               height={640}
               unoptimized
               priority
+              onError={handleImageError}
               style={{
                 width: "100%",
                 height: "100%",
