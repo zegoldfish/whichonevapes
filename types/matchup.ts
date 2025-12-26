@@ -1,43 +1,54 @@
-export interface MatchupVote {
-  id: string; // UUID (partition key)
-  timestamp: string; // ISO timestamp (sort key)
-  matchupKey: string; // Normalized pair: sorted([celebAId, celebBId]).join('|')
-  eventType: "vote";
+import { z } from "zod";
 
+export const MatchupVoteSchema = z.object({
+  id: z.string().uuid(),
+  timestamp: z.string().datetime(),
+  matchupKey: z.string().min(1),
+  eventType: z.literal("vote"),
+  
   // Celebrity info
-  celebAId: string;
-  celebBId: string;
-  celebAName: string; // Denormalized for easier reading
-  celebBName: string;
-
+  celebAId: z.string().uuid(),
+  celebBId: z.string().uuid(),
+  celebAName: z.string().min(1),
+  celebBName: z.string().min(1),
+  
   // Vote & Elo
-  winner: "A" | "B";
-  kFactor: number; // K value used
-
+  winner: z.enum(["A", "B"]),
+  kFactor: z.number().int().min(1).max(64),
+  
   // Before & after Elo
-  celebAEloBefore: number;
-  celebBEloBefore: number;
-  celebAEloAfter: number;
-  celebBEloAfter: number;
-
+  celebAEloBefore: z.number(),
+  celebBEloBefore: z.number(),
+  celebAEloAfter: z.number(),
+  celebBEloAfter: z.number(),
+  
   // Analytics
-  clientIp: string; // For user feedback/spam detection
-}
+  clientIp: z.string().min(1),
+});
 
-export interface MatchupSkip {
-  id: string; // UUID (partition key)
-  timestamp: string; // ISO timestamp (sort key)
-  matchupKey: string; // Normalized pair: sorted([celebAId, celebBId]).join('|')
-  eventType: "skip";
+export type MatchupVote = z.infer<typeof MatchupVoteSchema>;
 
+export const MatchupSkipSchema = z.object({
+  id: z.string().uuid(),
+  timestamp: z.string().datetime(),
+  matchupKey: z.string().min(1),
+  eventType: z.literal("skip"),
+  
   // Celebrity info
-  celebAId: string;
-  celebBId: string;
-  celebAName: string; // Denormalized for easier reading
-  celebBName: string;
-
+  celebAId: z.string().uuid(),
+  celebBId: z.string().uuid(),
+  celebAName: z.string().min(1),
+  celebBName: z.string().min(1),
+  
   // Analytics
-  clientIp: string; // For user feedback/spam detection
-}
+  clientIp: z.string().min(1),
+});
 
-export type Matchup = MatchupVote | MatchupSkip;
+export type MatchupSkip = z.infer<typeof MatchupSkipSchema>;
+
+export const MatchupSchema = z.discriminatedUnion("eventType", [
+  MatchupVoteSchema,
+  MatchupSkipSchema,
+]);
+
+export type Matchup = z.infer<typeof MatchupSchema>;
