@@ -436,7 +436,7 @@ function RankingsContent() {
                 if (sortBy === "matchRate") {
                   const ma = matchesPerDay(a.matches ?? 0, a.createdAt) ?? -1;
                   const mb = matchesPerDay(b.matches ?? 0, b.createdAt) ?? -1;
-                  return (mb as number) - (ma as number);
+                  return mb - ma;
                 }
                 if (sortBy === "recent") {
                   const da = daysSince(a.updatedAt) ?? Number.POSITIVE_INFINITY;
