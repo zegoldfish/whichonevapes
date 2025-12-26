@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Box,
   TextField,
@@ -30,11 +30,17 @@ export default function SearchCelebrity({ onNoResults }: SearchCelebrityProps) {
   const [error, setError] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
 
-  const handleSearch = async (term: string) => {
+  const handleSearch = (term: string) => {
     setSearchTerm(term);
     setHasSearched(false);
-    
-    if (term.trim().length < 2) {
+  };
+
+  // Debounce search to reduce GTM events and requests
+  useEffect(() => {
+    const term = searchTerm.trim();
+
+    if (term.length < 2) {
+      setLoading(false);
       setResults([]);
       setError(null);
       return;
@@ -43,29 +49,32 @@ export default function SearchCelebrity({ onNoResults }: SearchCelebrityProps) {
     setLoading(true);
     setError(null);
 
-    try {
-      // Track search input
-      gaEvent({ action: "search_input", category: "search", label: term.trim() });
-      const searchResults = await searchCelebrities({ searchTerm: term });
-      setResults(searchResults);
-      setHasSearched(true);
-      
-      // Track search results count
-      if (searchResults.length === 0) {
-        gaEvent({ action: "search_no_results", category: "search", label: term.trim() });
-      } else {
-        gaEvent({ action: "search_results", category: "search", label: `${term.trim()}:${searchResults.length}` });
+    const timer = setTimeout(async () => {
+      try {
+        // Track search input (debounced)
+        gaEvent({ action: "search_input", category: "search", label: term });
+
+        const searchResults = await searchCelebrities({ searchTerm: term });
+        setResults(searchResults);
+        setHasSearched(true);
+
+        // Track search results count (debounced)
+        if (searchResults.length === 0) {
+          gaEvent({ action: "search_no_results", category: "search", label: term });
+          if (onNoResults) onNoResults();
+        } else {
+          gaEvent({ action: "search_results", category: "search", label: `${term}:${searchResults.length}` });
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Search failed");
+        setResults([]);
+      } finally {
+        setLoading(false);
       }
-      if (searchResults.length === 0 && onNoResults) {
-        onNoResults();
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Search failed");
-      setResults([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+    }, 400); // 400ms debounce
+
+    return () => clearTimeout(timer);
+  }, [searchTerm, onNoResults]);
 
   return (
     <Box>
