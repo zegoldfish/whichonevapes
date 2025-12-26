@@ -29,6 +29,7 @@ export function AppHeader() {
 
   const navLinks = [
     { href: "/", label: "Play" },
+    { href: "/search", label: "Search" },
     { href: "/rankings", label: "Rankings" },
     { href: "/about", label: "About" },
   ];

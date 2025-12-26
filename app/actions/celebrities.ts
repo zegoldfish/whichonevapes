@@ -159,8 +159,11 @@ export async function getRankedCelebritiesPage(params: {
   // Load all celebrities from cache (refreshed every 5 min)
   const allCelebs = await getCachedCelebrities();
   
+  // Filter to only approved celebrities
+  const approvedCelebs = allCelebs.filter(c => c.approved === undefined || c.approved === true);
+  
   // Sort by Elo descending
-  const sortedCelebs = allCelebs
+  const sortedCelebs = approvedCelebs
     .slice()
     .sort((a, b) => (b.elo ?? 1000) - (a.elo ?? 1000));
 
@@ -278,18 +281,21 @@ export async function getRandomCelebrityPair(): Promise<{
 }> {
   const items = await getCachedCelebrities();
 
-  if (items.length < 2) {
+  // Filter to only approved celebrities
+  const approvedItems = items.filter(c => c.approved === undefined || c.approved === true);
+
+  if (approvedItems.length < 2) {
     throw new Error("Not enough celebrities in database");
   }
 
   // Simple random selection
-  const idx1 = Math.floor(Math.random() * items.length);
-  let idx2 = Math.floor(Math.random() * items.length);
+  const idx1 = Math.floor(Math.random() * approvedItems.length);
+  let idx2 = Math.floor(Math.random() * approvedItems.length);
   while (idx2 === idx1) {
-    idx2 = Math.floor(Math.random() * items.length);
+    idx2 = Math.floor(Math.random() * approvedItems.length);
   }
 
-  return { a: items[idx1], b: items[idx2] };
+  return { a: approvedItems[idx1], b: approvedItems[idx2] };
 }
 
 // Fetch Wikipedia photo and bio for a celebrity on demand
@@ -343,6 +349,126 @@ export async function getCelebrityWikipediaData(pageId: string): Promise<{
   return {
     bio: wikiData.bio,
     image: wikiData.image,
+  };
+}
+
+// Search for celebrities by name (approved only)
+export async function searchCelebrities(params: {
+  searchTerm: string;
+}): Promise<Celebrity[]> {
+  const schema = z.object({
+    searchTerm: z.string().min(1),
+  });
+  const { searchTerm } = schema.parse(params);
+
+  const normalizedSearch = searchTerm.trim().toLowerCase();
+
+  // Load all approved celebrities from cache
+  const allCelebs = await getCachedCelebrities();
+  
+  // Filter by search term (only approved celebrities)
+  const filtered = allCelebs
+    .filter((c) => 
+      (c.approved === undefined || c.approved === true) && 
+      c.name?.toLowerCase().includes(normalizedSearch)
+    )
+    .sort((a, b) => (b.elo ?? 1000) - (a.elo ?? 1000))
+    .slice(0, 10); // Limit to top 10 results
+
+  return filtered;
+}
+
+// Suggest a new celebrity (creates unapproved entry)
+export async function suggestCelebrity(params: {
+  name: string;
+  wikipediaPageId?: string;
+}): Promise<{ success: boolean; message: string }> {
+  const schema = z.object({
+    name: z.string().min(1).max(100),
+    wikipediaPageId: z.string().optional(),
+  });
+  const { name, wikipediaPageId } = schema.parse(params);
+
+  // Per-IP rate limit for suggestions
+  let clientIp = "unknown";
+  try {
+    const headerList = await headers();
+    clientIp = (headerList.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+               headerList.get("x-real-ip") ||
+               "unknown") as string;
+  } catch {
+    // If headers are unavailable, fall back to unknown
+  }
+  const { ok, retryAfterMs } = rateLimit({ 
+    key: `suggest:${clientIp}`, 
+    windowMs: 300_000, // 5 minutes
+    max: 5 
+  });
+  if (!ok) {
+    const waitSeconds = Math.max(1, Math.ceil((retryAfterMs || 0) / 1000));
+    throw new Error(`Rate limit exceeded. Try again in ${waitSeconds}s.`);
+  }
+
+  // Check if celebrity with this name already exists (approved or unapproved)
+  const allCelebs = await getCachedCelebrities();
+  const existing = allCelebs.find(
+    (c) => c.name.toLowerCase() === name.trim().toLowerCase()
+  );
+  
+  if (existing) {
+    if (existing.approved === false) {
+      return {
+        success: false,
+        message: "This celebrity has already been suggested and is pending approval.",
+      };
+    }
+    return {
+      success: false,
+      message: "This celebrity already exists in our database!",
+    };
+  }
+
+  // Create slug from name
+  const slug = name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+
+  const now = new Date().toISOString();
+  const newCelebrity: Celebrity = {
+    id: crypto.randomUUID(),
+    name: name.trim(),
+    slug,
+    wikipediaPageId,
+    vapesVotes: 0,
+    doesNotVapeVotes: 0,
+    elo: 1000,
+    wins: 0,
+    matches: 0,
+    confirmedVaper: false,
+    confirmedVaperYesVotes: 0,
+    confirmedVaperNoVotes: 0,
+    approved: false,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  // Insert into DynamoDB
+  const { PutCommand } = await import("@aws-sdk/lib-dynamodb");
+  await ddb.send(
+    new PutCommand({
+      TableName: CELEBRITIES_TABLE_NAME,
+      Item: newCelebrity,
+      ConditionExpression: "attribute_not_exists(id)",
+    })
+  );
+
+  // Invalidate cache
+  cachedCelebrities = [];
+
+  return {
+    success: true,
+    message: "Thank you! Your celebrity suggestion has been submitted for review.",
   };
 }
 
