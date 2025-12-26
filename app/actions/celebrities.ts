@@ -173,8 +173,8 @@ export async function getRankedCelebritiesPage(params: {
 
   // Filter by search if provided (preserving global ranks)
   const filteredCelebs = normalizedSearch
-    ? rankedCelebs.filter((c) => c.name?.toLowerCase().includes(normalizedSearch))
-    : rankedCelebs;
+    ? sortedCelebs.filter((c) => c.name?.toLowerCase().includes(normalizedSearch))
+    : sortedCelebs;
 
   // Parse cursor (now just a numeric offset)
   let offset = 0;
