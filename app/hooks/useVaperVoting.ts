@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { event as gaEvent } from "@/lib/gtag";
 import { voteConfirmedVaper } from "@/app/actions/celebrities";
 
 interface UseVaperVotingProps {
@@ -41,6 +42,13 @@ export function useVaperVoting({
       const result = await voteConfirmedVaper({
         celebrityId,
         isVaper,
+      });
+      // Track GA event for confirmed vaper vote
+      gaEvent({
+        action: "vaper_vote",
+        category: "engagement",
+        label: `celebrityId:${celebrityId}|vote:${isVaper ? "yes" : "no"}`,
+        value: 1,
       });
       setVotes({ yes: result.yesVotes, no: result.noVotes });
     } catch (err) {

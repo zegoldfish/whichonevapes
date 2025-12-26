@@ -18,6 +18,7 @@ import {
   downloadMatchupImage,
   shareMatchupImage,
 } from "@/lib/canvasMatchup";
+import { event as gaEvent } from "@/lib/gtag";
 
 interface MatchupShareButtonProps {
   celebA: Celebrity;
@@ -53,6 +54,7 @@ export function MatchupShareButton({
         imgA: imgA ? "loaded" : "missing",
         imgB: imgB ? "loaded" : "missing",
       });
+      gaEvent({ action: "share_generate", category: "share", label: `${celebA.name}-vs-${celebB.name}` });
       
       const blob = await drawMatchupCanvas(celebAWithImg, celebBWithImg, {
         includeNames: true,
@@ -62,15 +64,19 @@ export function MatchupShareButton({
       console.log("Canvas generated, blob size:", blob.size);
       setGeneratedBlob(blob);
       setShowDialog(true);
+      gaEvent({ action: "share_dialog_open", category: "share", label: `${celebA.name}-vs-${celebB.name}` });
 
       // Auto-share if Web Share API is available
       // @ts-ignore - navigator.share is optional API not yet in all TS types
       if (typeof navigator !== "undefined" && navigator.share) {
         try {
+          gaEvent({ action: "share_attempt", category: "share", label: `${celebA.name}-vs-${celebB.name}` });
           await shareMatchupImage(blob, celebA, celebB);
+          gaEvent({ action: "share_success", category: "share", label: `${celebA.name}-vs-${celebB.name}` });
         } catch (err) {
           // User cancelled or share failed, dialog is already open
           console.log("Share cancelled or failed:", err);
+          gaEvent({ action: "share_fail", category: "share", label: `${celebA.name}-vs-${celebB.name}` });
         }
       }
     } catch (err) {
@@ -89,6 +95,7 @@ export function MatchupShareButton({
         generatedBlob,
         `matchup-${celebA.name}-vs-${celebB.name}.jpg`
       );
+      gaEvent({ action: "share_download", category: "share", label: `${celebA.name}-vs-${celebB.name}` });
       setShowDialog(false);
     }
   };
@@ -96,8 +103,11 @@ export function MatchupShareButton({
   const handleShare = async () => {
     if (generatedBlob) {
       try {
+        gaEvent({ action: "share_attempt", category: "share", label: `${celebA.name}-vs-${celebB.name}` });
         await shareMatchupImage(generatedBlob, celebA, celebB);
+        gaEvent({ action: "share_success", category: "share", label: `${celebA.name}-vs-${celebB.name}` });
       } catch (err) {
+        gaEvent({ action: "share_fail", category: "share", label: `${celebA.name}-vs-${celebB.name}` });
         setError(
           err instanceof Error ? err.message : "Failed to share image"
         );

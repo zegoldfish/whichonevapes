@@ -4,6 +4,8 @@ import Link from "next/link";
 import { CelebrityProfile } from "@/app/components/CelebrityProfile";
 import { type Celebrity } from "@/types/celebrity";
 import { Box, Button } from "@mui/material";
+import { useEffect } from "react";
+import { event as gaEvent } from "@/lib/gtag";
 import HomeRoundedIcon from "@mui/icons-material/HomeRounded";
 
 interface Props {
@@ -11,6 +13,9 @@ interface Props {
 }
 
 export function ClientCelebrityCard({ celebrity }: Props) {
+  useEffect(() => {
+    gaEvent({ action: "profile_view", category: "engagement", label: `celebrityId:${celebrity.id}|name:${celebrity.name}` });
+  }, [gaEvent, celebrity.id, celebrity.name]);
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
       <Box sx={{ display: "flex", justifyContent: "center" }}>
@@ -19,6 +24,7 @@ export function ClientCelebrityCard({ celebrity }: Props) {
           href="/"
           variant="outlined"
           startIcon={<HomeRoundedIcon />}
+          onClick={() => gaEvent({ action: "back_to_game", category: "navigation", label: "profile_page" })}
           sx={{
             borderRadius: 3,
             borderColor: "rgba(248,249,250,0.22)",
