@@ -184,7 +184,7 @@ function drawImageOnCanvas(
     img.onload = () => {
       clearTimeout(timeout);
       try {
-        // Calculate dimensions to maintain aspect ratio and fill the box
+        // Calculate dimensions to maintain aspect ratio and fit within the box (contain)
         const imgAspect = img.width / img.height;
         const boxAspect = width / height;
         
@@ -194,11 +194,15 @@ function drawImageOnCanvas(
         let drawY = y;
 
         if (imgAspect > boxAspect) {
-          drawWidth = height * imgAspect;
-          drawX = x + (width - drawWidth) / 2;
-        } else {
+          // Image is wider than box - fit to width
+          drawWidth = width;
           drawHeight = width / imgAspect;
           drawY = y + (height - drawHeight) / 2;
+        } else {
+          // Image is taller than box - fit to height
+          drawHeight = height;
+          drawWidth = height * imgAspect;
+          drawX = x + (width - drawWidth) / 2;
         }
 
         // Draw rounded rectangle background for image
