@@ -72,7 +72,6 @@ async function cacheImageToS3(
     }
     return `https://${WIKIPEDIA_CACHE_BUCKET}.s3.${REGION}.amazonaws.com/${s3Key}`;
   } catch (error) {
-    console.error(`Error caching image to S3:`, error);
     // Return original URL as fallback
     return imageUrl;
   }
@@ -105,7 +104,6 @@ export async function getCachedWikipediaData(
 
     return item;
   } catch (error) {
-    console.error(`Error getting cached Wikipedia data:`, error);
     return null;
   }
 }
@@ -131,7 +129,6 @@ export async function cacheWikipediaData(
       cachedImageUrl = await cacheImageToS3(originalImageUrl, pageId);
       s3Key = generateImageKey(originalImageUrl, pageId);
     } catch (error) {
-      console.error(`Failed to cache image for page ${pageId}:`, error);
       cachedImageUrl = originalImageUrl; // Fallback to original
     }
   }
@@ -155,7 +152,7 @@ export async function cacheWikipediaData(
       })
     );
   } catch (error) {
-    console.error(`Error saving Wikipedia cache to DynamoDB:`, error);
+    // Silently fail - data will be re-fetched on next request
   }
 
   return cachedData;
@@ -199,7 +196,7 @@ export async function batchGetCachedWikipediaData(
         }
       }
     } catch (error) {
-      console.error(`Error batch getting cached Wikipedia data:`, error);
+      // Silently fail - will attempt to fetch missing items from Wikipedia API
     }
   }
 

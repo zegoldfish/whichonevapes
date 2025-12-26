@@ -14,6 +14,7 @@ import { voteBetweenCelebrities, getRandomCelebrityPair } from "./actions/celebr
 import GameCardSkeleton from "./components/GameCardSkeleton";
 import { VoteCard } from "./components/VoteCard";
 import { COLORS } from "@/lib/theme";
+import { MatchupCardPair } from "./components/MatchupCardPair";
 
 function HomeContent() {
   const [pair, setPair] = useState<{ a: Celebrity; b: Celebrity } | null>(null);
@@ -274,32 +275,19 @@ function HomeContent() {
           }}
         >
           {loading || !pair ? (
-            <GameCardSkeleton position="left" />
+            <>
+              <GameCardSkeleton position="left" />
+              <GameCardSkeleton position="right" />
+            </>
           ) : (
-            <VoteCard
-              key={pair.a.id}
-              celebrity={pair.a}
-              onVote={() => handleVote("A")}
+            <MatchupCardPair
+              celebA={pair.a}
+              celebB={pair.b}
+              onVoteA={() => handleVote("A")}
+              onVoteB={() => handleVote("B")}
               isVoting={voting}
-              position="left"
-              voteState={
-                voteFeedback === "A" ? "winner" : voteFeedback === "B" ? "loser" : null
-              }
-            />
-          )}
-
-          {loading || !pair ? (
-            <GameCardSkeleton position="right" />
-          ) : (
-            <VoteCard
-              key={pair.b.id}
-              celebrity={pair.b}
-              onVote={() => handleVote("B")}
-              isVoting={voting}
-              position="right"
-              voteState={
-                voteFeedback === "B" ? "winner" : voteFeedback === "A" ? "loser" : null
-              }
+              feedbackA={voteFeedback === "A"}
+              feedbackB={voteFeedback === "B"}
             />
           )}
         </Box>
