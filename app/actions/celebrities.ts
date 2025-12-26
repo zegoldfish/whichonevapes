@@ -177,7 +177,15 @@ export async function getRankedCelebritiesPage(params: {
     : rankedCelebs;
 
   // Parse cursor (now just a numeric offset)
-  const offset = cursor ? parseInt(cursor, 10) : 0;
+  let offset = 0;
+  if (cursor) {
+    const parsed = parseInt(cursor, 10);
+    // Validate: must be a valid non-negative number
+    if (!isNaN(parsed) && parsed >= 0) {
+      offset = parsed;
+    }
+    // Invalid cursor defaults to 0; silently reset pagination
+  }
   
   // Paginate
   const paginatedItems = filteredCelebs.slice(offset, offset + pageSize);
