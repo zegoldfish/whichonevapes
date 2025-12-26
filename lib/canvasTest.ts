@@ -45,5 +45,3 @@ async function test() {
     console.error("Canvas test failed:", err);
   }
 }
-
-test();
