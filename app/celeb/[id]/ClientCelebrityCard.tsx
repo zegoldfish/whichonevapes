@@ -15,7 +15,7 @@ interface Props {
 export function ClientCelebrityCard({ celebrity }: Props) {
   useEffect(() => {
     gaEvent({ action: "profile_view", category: "engagement", label: `celebrityId:${celebrity.id}|name:${celebrity.name}` });
-  }, [celebrity.id, celebrity.name]);
+  }, [gaEvent, celebrity.id, celebrity.name]);
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
       <Box sx={{ display: "flex", justifyContent: "center" }}>
