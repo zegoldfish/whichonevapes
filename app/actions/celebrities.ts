@@ -352,6 +352,67 @@ export async function getCelebrityWikipediaData(pageId: string): Promise<{
   };
 }
 
+// Search Wikipedia for pages by query (title), returning pageId, title, and optional thumbnail
+export async function searchWikipedia(params: {
+  query: string;
+  limit?: number;
+}): Promise<Array<{ pageId: string; title: string; thumbnail?: string }>> {
+  const schema = z.object({
+    query: z.string().min(2),
+    limit: z.number().int().min(1).max(20).optional(),
+  });
+  const { query, limit = 5 } = schema.parse(params);
+
+  let clientIp = "unknown";
+  try {
+    const headerList = await headers();
+    clientIp = (headerList.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      headerList.get("x-real-ip") ||
+      "unknown") as string;
+  } catch {}
+
+  const { ok, retryAfterMs } = rateLimit({ key: `wiki-search:${clientIp}`, windowMs: 60_000, max: 30 });
+  if (!ok) {
+    const waitSeconds = Math.max(1, Math.ceil((retryAfterMs || 0) / 1000));
+    throw new Error(`Rate limit exceeded. Try again in ${waitSeconds}s.`);
+  }
+
+  const WIKIPEDIA_API = "https://en.wikipedia.org/w/api.php";
+  const paramsSearch = new URLSearchParams({
+    action: "query",
+    format: "json",
+    generator: "search",
+    gsrsearch: query,
+    gsrlimit: String(limit),
+    prop: "pageimages",
+    piprop: "thumbnail",
+    pithumbsize: "120",
+    origin: "*",
+  });
+
+  const res = await fetch(`${WIKIPEDIA_API}?${paramsSearch.toString()}`, {
+    headers: {
+      "User-Agent": "whichonevapes/1.0 (contact: admin@whichonevapes.net)",
+    },
+  });
+  if (!res.ok) {
+    throw new Error(`Wikipedia search failed: ${res.statusText}`);
+  }
+  const data = await res.json();
+  const pages = data?.query?.pages || {};
+
+  const results: Array<{ pageId: string; title: string; thumbnail?: string }> = Object.values(pages)
+    .map((p: any) => ({
+      pageId: String(p.pageid),
+      title: p.title as string,
+      thumbnail: p.thumbnail?.source as string | undefined,
+    }))
+    // Wikipedia can return duplicates or non-person pages; basic filter to enforce presence of title
+    .filter((r) => !!r.title);
+
+  return results;
+}
+
 // Search for celebrities by name (approved only)
 export async function searchCelebrities(params: {
   searchTerm: string;
