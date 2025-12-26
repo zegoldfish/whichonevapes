@@ -35,13 +35,11 @@ export function CelebrityProfile({ celebrity }: CelebrityProfileProps) {
   const [currentImgSrc, setCurrentImgSrc] = useState<string | null>(imgSrc);
   const [imageError, setImageError] = useState(false);
 
-  // Update current image source when imgSrc changes
+  // Update and reset image state when imgSrc or celebrity changes
   useEffect(() => {
-    if (imgSrc) {
-      setCurrentImgSrc(imgSrc);
-      setImageError(false);
-    }
-  }, [imgSrc]);
+    setCurrentImgSrc(imgSrc ?? null);
+    setImageError(false);
+  }, [imgSrc, celebrity.id]);
 
   const handleImageError = () => {
     if (!imageError && fallbackImgSrc && currentImgSrc !== fallbackImgSrc) {
