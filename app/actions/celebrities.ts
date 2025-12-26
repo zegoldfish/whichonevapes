@@ -103,6 +103,14 @@ export async function logMatchupSkip(params: {
   });
   const { celebAId, celebBId } = schema.parse(params);
 
+  // Per-IP rate limit to prevent skip spam
+  const clientIp = await getClientIp();
+  const { ok, retryAfterMs } = rateLimit({ key: `skip:${clientIp}`, windowMs: 60_000, max: 30 });
+  if (!ok) {
+    const waitSeconds = Math.max(1, Math.ceil((retryAfterMs || 0) / 1000));
+    throw new Error(`Rate limit exceeded. Try again in ${waitSeconds}s.`);
+  }
+
   // Get celeb names for denormalization
   const batch = await ddb.send(
     new BatchGetCommand({
@@ -120,9 +128,6 @@ export async function logMatchupSkip(params: {
   if (!a || !b) {
     throw new Error("One or both celebrities not found");
   }
-
-  // Get client IP
-  const clientIp = await getClientIp();
 
   const skip: Matchup = {
     id: crypto.randomUUID(),
