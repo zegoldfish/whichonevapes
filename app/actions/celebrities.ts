@@ -413,6 +413,46 @@ export async function searchWikipedia(params: {
   return results;
 }
 
+// Paginated list of unapproved celebrities for review
+export async function getUnapprovedCelebritiesPage(params: {
+  pageSize?: number;
+  cursor?: string | null; // numeric offset encoded as string
+}): Promise<{
+  items: Array<Pick<Celebrity, "id" | "name" | "slug" | "wikipediaPageId" | "createdAt" | "updatedAt">>;
+  nextCursor?: string;
+  totalCount: number;
+}> {
+  const schema = z.object({
+    pageSize: z.number().int().min(1).max(50).optional(),
+    cursor: z.string().optional().nullable(),
+  });
+
+  const { pageSize = 10, cursor } = schema.parse(params);
+  const offset = cursor ? parseInt(cursor, 10) : 0;
+
+  // Use cached list and filter to unapproved
+  const allCelebs = await getCachedCelebrities();
+  const unapproved = allCelebs
+    .filter((c) => c.approved === false)
+    .sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+
+  const paginated = unapproved.slice(offset, offset + pageSize);
+  const hasMore = offset + pageSize < unapproved.length;
+
+  return {
+    items: paginated.map((c) => ({
+      id: c.id,
+      name: c.name,
+      slug: c.slug,
+      wikipediaPageId: c.wikipediaPageId,
+      createdAt: c.createdAt,
+      updatedAt: c.updatedAt,
+    })),
+    nextCursor: hasMore ? String(offset + pageSize) : undefined,
+    totalCount: unapproved.length,
+  };
+}
+
 // Search for celebrities by name (approved only)
 export async function searchCelebrities(params: {
   searchTerm: string;

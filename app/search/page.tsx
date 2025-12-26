@@ -7,6 +7,7 @@ import Typography from "@mui/material/Typography";
 import Divider from "@mui/material/Divider";
 import SearchCelebrity from "../components/SearchCelebrity";
 import CelebritySuggestionForm from "../components/CelebritySuggestionForm";
+import UnapprovedCelebritiesTable from "../components/UnapprovedCelebritiesTable";
 import { COLORS } from "@/lib/theme";
 
 export default function SearchPage() {
@@ -37,6 +38,10 @@ export default function SearchPage() {
       <Divider sx={{ my: 4, borderColor: COLORS.border.light }} />
 
       <CelebritySuggestionForm />
+
+      <Box sx={{ mt: 4 }}>
+        <UnapprovedCelebritiesTable />
+      </Box>
     </Container>
   );
 }
