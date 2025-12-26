@@ -89,5 +89,6 @@ jobs:
               -e HOSTNAME="0.0.0.0" \
               -e AWS_REGION="${{ env.AWS_REGION }}" \
               -e NEXT_PUBLIC_SENTRY_DSN="${{ secrets.SENTRY_DSN }}" \
+              -e NEXT_PUBLIC_GA_MEASUREMENT_ID="${{ secrets.NEXT_PUBLIC_GA_MEASUREMENT_ID }}" \
               ${{ env.DOCKER_REPOSITORY }}:${{ env.IMAGE_TAG }}
           ENDSSH
