@@ -1,6 +1,6 @@
 "use client";
 
-import { type MouseEvent, useState, useEffect } from "react";
+import { type MouseEvent } from "react";
 import Image from "next/image";
 import {
   Box,
