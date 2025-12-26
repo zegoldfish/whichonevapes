@@ -24,6 +24,7 @@ import { getVaperLikelihood } from "@/lib/vaper";
 import { eloPercentileFromRank, matchesPerDay, wilsonLowerBound, daysSince } from "@/lib/metrics";
 import { COLORS, GRADIENTS } from "@/lib/theme";
 import { type Celebrity } from "@/types/celebrity";
+import { event as gaEvent } from "@/lib/gtag";
 
 const PAGE_SIZE = 24;
 
@@ -186,6 +187,7 @@ function RankingCard({ celeb, rank, totalCount }: { celeb: Celebrity; rank: numb
         </Typography>
         <Link
           href={`/celeb/${celeb.id}`}
+          onClick={() => gaEvent({ action: "rankings_profile_click", category: "rankings", label: `celebrityId:${celeb.id}|rank:${rank}` })}
           style={{
             display: "inline-flex",
             alignItems: "center",
@@ -231,6 +233,19 @@ function RankingsContent() {
     }, 300);
     return () => clearTimeout(timer);
   }, [searchInput]);
+
+  useEffect(() => {
+    // Track search query changes (debounced value)
+    if (hasLoadedRef.current) {
+      gaEvent({ action: "rankings_search", category: "rankings", label: searchQuery || "" });
+    }
+  }, [searchQuery]);
+
+  useEffect(() => {
+    if (hasLoadedRef.current) {
+      gaEvent({ action: "rankings_sort_change", category: "rankings", label: sortBy });
+    }
+  }, [sortBy]);
 
   const updateUrl = (cursor: string | null, search: string) => {
     const params = new URLSearchParams();
@@ -282,6 +297,7 @@ function RankingsContent() {
     if (!nextCursor) return;
     const newStack = [...cursorStack, currentCursor ?? null];
     loadPage(nextCursor, newStack);
+    gaEvent({ action: "rankings_pagination_next", category: "rankings", label: `page:${page + 1}` });
   };
 
   const handlePrev = () => {
@@ -289,6 +305,7 @@ function RankingsContent() {
     const newStack = [...cursorStack];
     const prevCursor = newStack.pop() || null;
     loadPage(prevCursor, newStack);
+    gaEvent({ action: "rankings_pagination_prev", category: "rankings", label: `page:${page - 1}` });
   };
 
   return (
@@ -381,6 +398,8 @@ function RankingsContent() {
           <option value="matchRate">Match rate/day</option>
           <option value="recent">Recent activity</option>
         </TextField>
+
+        {/** sort change tracking handled via useEffect above */}
       </Box>
 
       {error && (

@@ -20,6 +20,7 @@ import {
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import CloseIcon from "@mui/icons-material/Close";
+import { event as gaEvent } from "@/lib/gtag";
 
 export function AppHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -83,6 +84,7 @@ export function AppHeader() {
                   key={link.href}
                   component={Link}
                   href={link.href}
+                  onClick={() => gaEvent({ action: "nav_click", category: "navigation", label: link.href })}
                   variant="text"
                   sx={{
                     color: "var(--text)",
@@ -147,6 +149,7 @@ export function AppHeader() {
                   component={Link}
                   href={link.href}
                   onClick={toggleMobileMenu}
+                  onMouseDown={() => gaEvent({ action: "nav_click", category: "navigation", label: link.href })}
                   sx={{
                     borderRadius: 2,
                     mb: 1,

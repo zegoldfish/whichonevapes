@@ -14,6 +14,7 @@ import { voteBetweenCelebrities, getRandomCelebrityPair } from "./actions/celebr
 import GameCardSkeleton from "./components/GameCardSkeleton";
 import { COLORS } from "@/lib/theme";
 import { MatchupCardPair } from "./components/MatchupCardPair";
+import { event as gaEvent } from "@/lib/gtag";
 
 function HomeContent() {
   const [pair, setPair] = useState<{ a: Celebrity; b: Celebrity } | null>(null);
@@ -29,6 +30,7 @@ function HomeContent() {
     winner: "A" | "B";
     winnerName: string;
   } | null>(null);
+  const [lastInputMethod, setLastInputMethod] = useState<"keyboard" | "touch" | "click" | null>(null);
 
   const prefetchNextPair = async () => {
     try {
@@ -104,6 +106,13 @@ function HomeContent() {
     // Show quick feedback animation before swapping cards
     setVoteFeedback(winner);
     await new Promise((r) => setTimeout(r, 180));
+    // Track GA event for match vote
+    gaEvent({
+      action: "match_vote",
+      category: "gameplay",
+      label: `winner:${winner}|method:${lastInputMethod ?? "unknown"}|a:${pair.a.name}|b:${pair.b.name}`,
+      value: 1,
+    });
     
     // Save vote request to run in background
     const votePromise = voteBetweenCelebrities({
@@ -201,7 +210,10 @@ function HomeContent() {
           <Stack direction="row" justifyContent="center" spacing={2} sx={{ mt: 2 }}>
             <Button
               variant="outlined"
-              onClick={fetchPair}
+              onClick={() => {
+                gaEvent({ action: "skip_click", category: "gameplay", label: "button", value: 1 });
+                fetchPair();
+              }}
               sx={{
                 px: 3,
                 py: 1.25,
@@ -282,8 +294,8 @@ function HomeContent() {
             <MatchupCardPair
               celebA={pair.a}
               celebB={pair.b}
-              onVoteA={() => handleVote("A")}
-              onVoteB={() => handleVote("B")}
+              onVoteA={() => { setLastInputMethod("click"); handleVote("A"); }}
+              onVoteB={() => { setLastInputMethod("click"); handleVote("B"); }}
               isVoting={voting}
               feedbackA={voteFeedback === "A"}
               feedbackB={voteFeedback === "B"}
