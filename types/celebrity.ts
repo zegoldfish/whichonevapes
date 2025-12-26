@@ -15,6 +15,7 @@ export const CelebritySchema = z.object({
   confirmedVaper: z.boolean().default(false),
   confirmedVaperYesVotes: z.number().int().min(0).default(0),
   confirmedVaperNoVotes: z.number().int().min(0).default(0),
+  approved: z.boolean().default(true),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });
