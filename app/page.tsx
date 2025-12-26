@@ -10,7 +10,7 @@ import Typography from "@mui/material/Typography";
 import Stack from "@mui/material/Stack";
 import Snackbar from "@mui/material/Snackbar";
 import { type Celebrity } from "@/types/celebrity";
-import { voteBetweenCelebrities, getRandomCelebrityPair } from "./actions/celebrities";
+import { voteBetweenCelebrities, getRandomCelebrityPair, logMatchupSkip } from "./actions/celebrities";
 import GameCardSkeleton from "./components/GameCardSkeleton";
 import { COLORS } from "@/lib/theme";
 import { MatchupCardPair } from "./components/MatchupCardPair";
@@ -88,6 +88,10 @@ function HomeContent() {
         handleVote("B");
       } else if (e.key === " ") {
         e.preventDefault();
+        gaEvent({ action: "skip_click", category: "gameplay", label: "spacebar", value: 1 });
+        logMatchupSkip({ celebAId: pair.a.id, celebBId: pair.b.id }).catch((err) => {
+          console.error("Failed to log skip:", err);
+        });
         fetchPair();
       }
     };
@@ -212,6 +216,11 @@ function HomeContent() {
               variant="outlined"
               onClick={() => {
                 gaEvent({ action: "skip_click", category: "gameplay", label: "button", value: 1 });
+                if (pair) {
+                  logMatchupSkip({ celebAId: pair.a.id, celebBId: pair.b.id }).catch((err) => {
+                    console.error("Failed to log skip:", err);
+                  });
+                }
                 fetchPair();
               }}
               sx={{

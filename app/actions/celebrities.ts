@@ -1,21 +1,153 @@
 "use server";
 
 import { z } from "zod";
-import { ddb, CELEBRITIES_TABLE_NAME } from "@/lib/aws/dynamodb";
+import { ddb, CELEBRITIES_TABLE_NAME, MATCHUPS_TABLE_NAME } from "@/lib/aws/dynamodb";
 import {
   TransactWriteCommand,
   BatchGetCommand,
   ScanCommand,
   UpdateCommand,
   QueryCommand,
+  PutCommand,
 } from "@aws-sdk/lib-dynamodb";
 import {
   type Celebrity,
 } from "@/types/celebrity";
+import { type Matchup } from "@/types/matchup";
 import { buildMatchDeltas, type Winner } from "@/lib/elo";
 import { fetchWikipediaData } from "@/lib/wikipedia";
 import { rateLimit } from "@/lib/rateLimit";
 import { headers } from "next/headers";
+
+// Helper: Extract client IP address from request headers
+async function getClientIp(): Promise<string> {
+  try {
+    const headerList = await headers();
+    return (headerList.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+            headerList.get("x-real-ip") ||
+            "unknown") as string;
+  } catch {
+    // If headers are unavailable, fall back to unknown
+    return "unknown";
+  }
+}
+
+// Helper: Generate normalized matchup key for head-to-head record tracking
+function createMatchupKey(celebAId: string, celebBId: string): string {
+  const ids = [celebAId, celebBId].sort();
+  return ids.join("|");
+}
+
+// Helper: Log a matchup vote for analytics and feedback
+async function logMatchup(params: {
+  celebAId: string;
+  celebBId: string;
+  celebAName: string;
+  celebBName: string;
+  winner: "A" | "B";
+  kFactor: number;
+  celebAEloBefore: number;
+  celebBEloBefore: number;
+  celebAEloAfter: number;
+  celebBEloAfter: number;
+  clientIp: string;
+}): Promise<void> {
+  const {
+    celebAId,
+    celebBId,
+    celebAName,
+    celebBName,
+    winner,
+    kFactor,
+    celebAEloBefore,
+    celebBEloBefore,
+    celebAEloAfter,
+    celebBEloAfter,
+    clientIp,
+  } = params;
+
+  const matchup: Matchup = {
+    id: crypto.randomUUID(),
+    timestamp: new Date().toISOString(),
+    matchupKey: createMatchupKey(celebAId, celebBId),
+    eventType: "vote",
+    celebAId,
+    celebBId,
+    celebAName,
+    celebBName,
+    winner,
+    kFactor,
+    celebAEloBefore,
+    celebBEloBefore,
+    celebAEloAfter,
+    celebBEloAfter,
+    clientIp,
+  };
+
+  await ddb.send(
+    new PutCommand({
+      TableName: MATCHUPS_TABLE_NAME,
+      Item: matchup,
+    })
+  );
+}
+
+// Log a skipped matchup for engagement/feedback analytics
+export async function logMatchupSkip(params: {
+  celebAId: string;
+  celebBId: string;
+}): Promise<void> {
+  const schema = z.object({
+    celebAId: z.string().uuid(),
+    celebBId: z.string().uuid(),
+  });
+  const { celebAId, celebBId } = schema.parse(params);
+
+  // Per-IP rate limit to prevent skip spam
+  const clientIp = await getClientIp();
+  const { ok, retryAfterMs } = rateLimit({ key: `skip:${clientIp}`, windowMs: 60_000, max: 30 });
+  if (!ok) {
+    const waitSeconds = Math.max(1, Math.ceil((retryAfterMs || 0) / 1000));
+    throw new Error(`Rate limit exceeded. Try again in ${waitSeconds}s.`);
+  }
+
+  // Get celeb names for denormalization
+  const batch = await ddb.send(
+    new BatchGetCommand({
+      RequestItems: {
+        [CELEBRITIES_TABLE_NAME]: {
+          Keys: [{ id: celebAId }, { id: celebBId }],
+        },
+      },
+    })
+  );
+
+  const items = (batch.Responses?.[CELEBRITIES_TABLE_NAME] || []) as Celebrity[];
+  const a = items.find((i) => i.id === celebAId);
+  const b = items.find((i) => i.id === celebBId);
+  if (!a || !b) {
+    throw new Error("One or both celebrities not found");
+  }
+
+  const skip: Matchup = {
+    id: crypto.randomUUID(),
+    timestamp: new Date().toISOString(),
+    matchupKey: createMatchupKey(celebAId, celebBId),
+    eventType: "skip",
+    celebAId,
+    celebBId,
+    celebAName: a.name,
+    celebBName: b.name,
+    clientIp,
+  };
+
+  await ddb.send(
+    new PutCommand({
+      TableName: MATCHUPS_TABLE_NAME,
+      Item: skip,
+    })
+  );
+}
 
 // Record a head-to-head vote between two celebrities using Elo
 export async function voteBetweenCelebrities(params: {
@@ -33,15 +165,7 @@ export async function voteBetweenCelebrities(params: {
   const { celebAId, celebBId, winner, k } = schema.parse(params);
 
   // Per-IP rate limit to reduce vote abuse (instance-local; use shared store in prod)
-  let clientIp = "unknown";
-  try {
-    const headerList = await headers();
-    clientIp = (headerList.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-               headerList.get("x-real-ip") ||
-               "unknown") as string;
-  } catch {
-    // If headers are unavailable, fall back to unknown
-  }
+  const clientIp = await getClientIp();
   const { ok, retryAfterMs } = rateLimit({ key: `vote:${clientIp}`, windowMs: 60_000, max: 30 });
   if (!ok) {
     const waitSeconds = Math.max(1, Math.ceil((retryAfterMs || 0) / 1000));
@@ -108,6 +232,23 @@ export async function voteBetweenCelebrities(params: {
       ],
     })
   );
+
+  // Log the matchup (fire-and-forget to avoid blocking)
+  logMatchup({
+    celebAId,
+    celebBId,
+    celebAName: a.name,
+    celebBName: b.name,
+    winner,
+    kFactor: k || 32,
+    celebAEloBefore: a.elo ?? 1000,
+    celebBEloBefore: b.elo ?? 1000,
+    celebAEloAfter: da.newElo,
+    celebBEloAfter: db.newElo,
+    clientIp,
+  }).catch((err) => {
+    console.error("Failed to log matchup:", err);
+  });
 
   return { newA: da.newElo, newB: db.newElo };
 }
@@ -369,13 +510,7 @@ export async function searchWikipedia(params: {
   });
   const { query, limit = 5 } = schema.parse(params);
 
-  let clientIp = "unknown";
-  try {
-    const headerList = await headers();
-    clientIp = (headerList.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-      headerList.get("x-real-ip") ||
-      "unknown") as string;
-  } catch {}
+  const clientIp = await getClientIp();
 
   const { ok, retryAfterMs } = rateLimit({ key: `wiki-search:${clientIp}`, windowMs: 60_000, max: 30 });
   if (!ok) {
@@ -497,15 +632,7 @@ export async function suggestCelebrity(params: {
   const { name, wikipediaPageId } = schema.parse(params);
 
   // Per-IP rate limit for suggestions
-  let clientIp = "unknown";
-  try {
-    const headerList = await headers();
-    clientIp = (headerList.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-               headerList.get("x-real-ip") ||
-               "unknown") as string;
-  } catch {
-    // If headers are unavailable, fall back to unknown
-  }
+  const clientIp = await getClientIp();
   const { ok, retryAfterMs } = rateLimit({ 
     key: `suggest:${clientIp}`, 
     windowMs: 300_000, // 5 minutes
@@ -591,15 +718,7 @@ export async function voteConfirmedVaper(params: {
   const { celebrityId, isVaper } = schema.parse(params);
 
   // Per-IP rate limit to reduce vote abuse
-  let clientIp = "unknown";
-  try {
-    const headerList = await headers();
-    clientIp = (headerList.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-               headerList.get("x-real-ip") ||
-               "unknown") as string;
-  } catch {
-    // If headers are unavailable, fall back to unknown
-  }
+  const clientIp = await getClientIp();
   const { ok, retryAfterMs } = rateLimit({ 
     key: `vaper-vote:${clientIp}`, 
     windowMs: 60_000, 
