@@ -20,6 +20,7 @@ import { type Celebrity } from "@/types/celebrity";
 import { getVaperLikelihood } from "@/lib/vaper";
 import { GRADIENTS, COLORS } from "@/lib/theme";
 import { useWikipediaData } from "@/app/hooks/useWikipediaData";
+import { useImageWithFallback } from "@/app/hooks/useImageWithFallback";
 import { useVaperVoting } from "@/app/hooks/useVaperVoting";
 import { MatchupShareButton } from "@/app/components/MatchupShareButton";
 
@@ -42,11 +43,12 @@ export function VoteCard({
   pairedCelebrity,
   pairedCelebImg,
 }: VoteCardProps) {
-  const { imgSrc, bio, loading: loadingImg } = useWikipediaData({
+  const { imgSrc, fallbackImgSrc, bio, loading: loadingImg } = useWikipediaData({
     wikipediaPageId: celebrity.wikipediaPageId,
     initialImage: celebrity.image,
     initialBio: celebrity.bio,
   });
+  const { currentSrc: currentImgSrc, onError: handleImageError } = useImageWithFallback(imgSrc, fallbackImgSrc);
 
   const { votes: vaperVotes, isVoting: isVotingVaper, error: vaperVoteError, handleVote } = useVaperVoting({
     celebrityId: celebrity.id,
@@ -111,13 +113,14 @@ export function VoteCard({
         }}
       >
         <Box sx={{ position: "relative", minHeight: { xs: 260, sm: 320 }, background: GRADIENTS.photoSection }}>
-          {imgSrc && (
+          {currentImgSrc && (
             <Image
-              src={imgSrc}
+              src={currentImgSrc}
               alt={celebrity.name}
               width={640}
               height={640}
               unoptimized
+              onError={handleImageError}
               style={{
                 width: "100%",
                 height: "100%",
@@ -156,7 +159,7 @@ export function VoteCard({
               }}
             />
           )}
-          {loadingImg && !imgSrc && (
+          {loadingImg && !currentImgSrc && (
             <Box
               sx={{
                 position: "absolute",
@@ -303,7 +306,7 @@ export function VoteCard({
               <MatchupShareButton
                 celebA={celebrity}
                 celebB={pairedCelebrity}
-                imgA={imgSrc}
+                imgA={currentImgSrc}
                 imgB={pairedCelebImg}
                 variant="button"
               />

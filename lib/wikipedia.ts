@@ -22,6 +22,7 @@ interface WikipediaResult {
   title: string;
   bio: string | null;
   image: string | null;
+  fallbackImage?: string | null;
 }
 
 // In-memory cache for ultra-fast access (L1 cache)
@@ -58,6 +59,7 @@ export async function fetchWikipediaData(
         title: persistentCache.title,
         bio: persistentCache.bio,
         image: persistentCache.imageUrl,
+        fallbackImage: persistentCache.originalImageUrl,
       };
       // Populate in-memory cache
       memoryCache.set(pageId, { value: result, expires: now + MEMORY_CACHE_TTL_MS });
@@ -135,6 +137,7 @@ export async function fetchWikipediaData(
         title: page.title || "",
         bio: page.extract || null,
         image: page.thumbnail?.source || null,
+        fallbackImage: page.thumbnail?.source || null, // Store original as fallback
       };
 
       // Save to in-memory cache
@@ -213,6 +216,7 @@ export async function fetchWikipediaDataBatch(
           title: persistentCache.title,
           bio: persistentCache.bio,
           image: persistentCache.imageUrl,
+          fallbackImage: persistentCache.originalImageUrl,
         };
         results[originalIndex] = result;
         // Populate in-memory cache
@@ -301,6 +305,7 @@ export async function fetchWikipediaDataBatch(
           title: page.title || "",
           bio: page.extract || null,
           image: page.thumbnail?.source || null,
+          fallbackImage: page.thumbnail?.source || null, // Store original as fallback
         };
 
         memoryCache.set(pageId, { value: result, expires: now + MEMORY_CACHE_TTL_MS });

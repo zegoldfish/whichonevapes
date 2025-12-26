@@ -9,6 +9,14 @@ const nextConfig: NextConfig = {
         hostname: "upload.wikimedia.org",
         pathname: "/wikipedia/**",
       },
+      {
+        protocol: "https",
+        hostname: "d2hzf4grkj74m2.cloudfront.net",
+      },
+      {
+        protocol: "https",
+        hostname: "whichonevapes-wikipedia-cache.s3.us-east-1.amazonaws.com",
+      },
     ],
   },
   async headers() {

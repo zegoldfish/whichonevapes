@@ -9,6 +9,7 @@ interface UseWikipediaDataProps {
 
 interface UseWikipediaDataReturn {
   imgSrc: string | null;
+  fallbackImgSrc: string | null;
   bio: string | null;
   loading: boolean;
 }
@@ -23,6 +24,7 @@ export function useWikipediaData({
   initialBio = null,
 }: UseWikipediaDataProps): UseWikipediaDataReturn {
   const [imgSrc, setImgSrc] = useState<string | null>(initialImage);
+  const [fallbackImgSrc, setFallbackImgSrc] = useState<string | null>(null);
   const [bio, setBio] = useState<string | null>(initialBio);
   const [loading, setLoading] = useState(false);
 
@@ -47,6 +49,9 @@ export function useWikipediaData({
         if (data.image && !imgSrc) {
           setImgSrc(data.image);
         }
+        if (data.fallbackImage) {
+          setFallbackImgSrc(data.fallbackImage);
+        }
         if (data.bio && !bio) {
           setBio(data.bio);
         }
@@ -61,7 +66,7 @@ export function useWikipediaData({
     return () => {
       active = false;
     };
-  }, [wikipediaPageId, imgSrc, bio, loading]);
+  }, [wikipediaPageId, imgSrc, bio]);
 
-  return { imgSrc, bio, loading };
+  return { imgSrc, fallbackImgSrc, bio, loading };
 }

@@ -18,6 +18,7 @@ import { type Celebrity } from "@/types/celebrity";
 import { getVaperLikelihood } from "@/lib/vaper";
 import { GRADIENTS, COLORS } from "@/lib/theme";
 import { useWikipediaData } from "@/app/hooks/useWikipediaData";
+import { useImageWithFallback } from "@/app/hooks/useImageWithFallback";
 import { useVaperVoting } from "@/app/hooks/useVaperVoting";
 
 interface CelebrityProfileProps {
@@ -25,11 +26,13 @@ interface CelebrityProfileProps {
 }
 
 export function CelebrityProfile({ celebrity }: CelebrityProfileProps) {
-  const { imgSrc, bio, loading: loadingWikiData } = useWikipediaData({
+  const { imgSrc, fallbackImgSrc, bio, loading: loadingWikiData } = useWikipediaData({
     wikipediaPageId: celebrity.wikipediaPageId,
     initialImage: celebrity.image,
     initialBio: celebrity.bio,
   });
+
+  const { currentSrc: currentImgSrc, onError: handleImageError } = useImageWithFallback(imgSrc, fallbackImgSrc);
 
   const { votes: vaperVotes, isVoting: isVotingVaper, error: vaperVoteError, handleVote } = useVaperVoting({
     celebrityId: celebrity.id,
@@ -63,7 +66,7 @@ export function CelebrityProfile({ celebrity }: CelebrityProfileProps) {
     >
       {/* Image Section */}
       <Box sx={{ position: "relative", minHeight: { xs: 280, sm: 360 }, background: GRADIENTS.photoSection }}>
-        {loadingWikiData && !imgSrc ? (
+        {loadingWikiData && !currentImgSrc ? (
           <Skeleton 
             variant="rectangular" 
             height={360} 
@@ -71,15 +74,16 @@ export function CelebrityProfile({ celebrity }: CelebrityProfileProps) {
               bgcolor: "rgba(255, 255, 255, 0.05)",
             }} 
           />
-        ) : imgSrc ? (
+        ) : currentImgSrc ? (
           <>
             <Image
-              src={imgSrc}
+              src={currentImgSrc}
               alt={celebrity.name}
               width={640}
               height={640}
               unoptimized
               priority
+              onError={handleImageError}
               style={{
                 width: "100%",
                 height: "100%",

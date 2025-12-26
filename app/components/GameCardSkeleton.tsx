@@ -57,15 +57,6 @@ export default function GameCardSkeleton({ position: _position = "left" }: Props
               opacity: 0.9,
             }}
           />
-          <Box sx={{ position: "absolute", top: 14, left: 14 }}>
-            <Skeleton
-              variant="rounded"
-              width={140}
-              height={28}
-              animation="wave"
-              sx={{ bgcolor: "rgba(29, 182, 168, 0.25)" }}
-            />
-          </Box>
         </Box>
 
         <Box
