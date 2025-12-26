@@ -42,6 +42,7 @@ jobs:
             --build-arg AWS_REGION=${{ env.AWS_REGION }} \
             --build-arg AWS_EC2_METADATA_DISABLED=true \
             --build-arg NEXT_PUBLIC_SENTRY_DSN=${{ secrets.SENTRY_DSN }} \
+            --build-arg NEXT_PUBLIC_GA_MEASUREMENT_ID=${{ secrets.NEXT_PUBLIC_GA_MEASUREMENT_ID }} \
             --build-arg SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }} \
             --build-arg SENTRY_ORG=${{ secrets.SENTRY_ORG }} \
             --build-arg SENTRY_PROJECT=${{ secrets.SENTRY_PROJECT }} \
