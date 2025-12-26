@@ -19,6 +19,7 @@ import { type Celebrity } from "@/types/celebrity";
 import { getVaperLikelihood } from "@/lib/vaper";
 import { GRADIENTS, COLORS } from "@/lib/theme";
 import { useWikipediaData } from "@/app/hooks/useWikipediaData";
+import { useImageWithFallback } from "@/app/hooks/useImageWithFallback";
 import { useVaperVoting } from "@/app/hooks/useVaperVoting";
 
 interface CelebrityProfileProps {
@@ -32,22 +33,7 @@ export function CelebrityProfile({ celebrity }: CelebrityProfileProps) {
     initialBio: celebrity.bio,
   });
 
-  const [currentImgSrc, setCurrentImgSrc] = useState<string | null>(celebrity.image ?? null);
-  const [imageError, setImageError] = useState(false);
-
-  // Update and reset image state when imgSrc or celebrity changes
-  useEffect(() => {
-    setCurrentImgSrc(imgSrc ?? null);
-    setImageError(false);
-  }, [imgSrc, celebrity.id]);
-
-  const handleImageError = () => {
-    if (!imageError && fallbackImgSrc && currentImgSrc !== fallbackImgSrc) {
-      console.warn(`Image failed to load: ${currentImgSrc}, falling back to: ${fallbackImgSrc}`);
-      setCurrentImgSrc(fallbackImgSrc);
-      setImageError(true);
-    }
-  };
+  const { currentSrc: currentImgSrc, onError: handleImageError } = useImageWithFallback(imgSrc, fallbackImgSrc);
 
   const { votes: vaperVotes, isVoting: isVotingVaper, error: vaperVoteError, handleVote } = useVaperVoting({
     celebrityId: celebrity.id,
