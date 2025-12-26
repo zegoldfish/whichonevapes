@@ -32,7 +32,7 @@ export function CelebrityProfile({ celebrity }: CelebrityProfileProps) {
     initialBio: celebrity.bio,
   });
 
-  const [currentImgSrc, setCurrentImgSrc] = useState<string | null>(imgSrc);
+  const [currentImgSrc, setCurrentImgSrc] = useState<string | null>(celebrity.image ?? null);
   const [imageError, setImageError] = useState(false);
 
   // Update and reset image state when imgSrc or celebrity changes
