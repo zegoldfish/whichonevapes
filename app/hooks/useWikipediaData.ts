@@ -66,7 +66,7 @@ export function useWikipediaData({
     return () => {
       active = false;
     };
-  }, [wikipediaPageId, imgSrc, bio, loading]);
+  }, [wikipediaPageId, imgSrc, bio]);
 
   return { imgSrc, fallbackImgSrc, bio, loading };
 }
