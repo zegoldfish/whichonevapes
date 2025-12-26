@@ -12,7 +12,6 @@ import Snackbar from "@mui/material/Snackbar";
 import { type Celebrity } from "@/types/celebrity";
 import { voteBetweenCelebrities, getRandomCelebrityPair } from "./actions/celebrities";
 import GameCardSkeleton from "./components/GameCardSkeleton";
-import { VoteCard } from "./components/VoteCard";
 import { COLORS } from "@/lib/theme";
 import { MatchupCardPair } from "./components/MatchupCardPair";
 
