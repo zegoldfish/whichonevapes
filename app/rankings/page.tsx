@@ -239,13 +239,13 @@ function RankingsContent() {
     if (hasLoadedRef.current) {
       gaEvent({ action: "rankings_search", category: "rankings", label: searchQuery || "" });
     }
-  }, [searchQuery]);
+  }, [searchQuery, gaEvent]);
 
   useEffect(() => {
     if (hasLoadedRef.current) {
       gaEvent({ action: "rankings_sort_change", category: "rankings", label: sortBy });
     }
-  }, [sortBy]);
+  }, [sortBy, gaEvent]);
 
   const updateUrl = (cursor: string | null, search: string) => {
     const params = new URLSearchParams();
