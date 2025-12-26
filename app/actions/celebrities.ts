@@ -159,34 +159,32 @@ export async function getRankedCelebritiesPage(params: {
   // Load all celebrities from cache (refreshed every 5 min)
   const allCelebs = await getCachedCelebrities();
   
-  // Sort by Elo descending
-  const sortedCelebs = allCelebs
+  // Sort by Elo descending and assign global ranks
+  const rankedCelebs = allCelebs
     .slice()
-    .sort((a, b) => (b.elo ?? 1000) - (a.elo ?? 1000));
+    .sort((a, b) => (b.elo ?? 1000) - (a.elo ?? 1000))
+    .map((celeb, index) => ({
+      ...celeb,
+      rank: index + 1,
+    }));
 
-  // Filter by search if provided
+  // Filter by search if provided (preserving global ranks)
   const filteredCelebs = normalizedSearch
-    ? sortedCelebs.filter((c) => c.name?.toLowerCase().includes(normalizedSearch))
-    : sortedCelebs;
-
-  // Add rank to filtered results
-  const rankedCelebs = filteredCelebs.map((celeb, index) => ({
-    ...celeb,
-    rank: index + 1,
-  }));
+    ? rankedCelebs.filter((c) => c.name?.toLowerCase().includes(normalizedSearch))
+    : rankedCelebs;
 
   // Parse cursor (now just a numeric offset)
   const offset = cursor ? parseInt(cursor, 10) : 0;
   
   // Paginate
-  const paginatedItems = rankedCelebs.slice(offset, offset + pageSize);
-  const hasMore = offset + pageSize < rankedCelebs.length;
+  const paginatedItems = filteredCelebs.slice(offset, offset + pageSize);
+  const hasMore = offset + pageSize < filteredCelebs.length;
   const nextCursor = hasMore ? String(offset + pageSize) : undefined;
 
   return {
     items: paginatedItems,
     nextCursor,
-    totalCount: rankedCelebs.length,
+    totalCount: filteredCelebs.length,
   };
 }
 
