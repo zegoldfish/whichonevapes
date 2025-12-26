@@ -48,7 +48,7 @@ export function VoteCard({
     initialBio: celebrity.bio,
   });
 
-  const [currentImgSrc, setCurrentImgSrc] = useState<string | null>(imgSrc);
+  const [currentImgSrc, setCurrentImgSrc] = useState<string | null>(imgSrc || celebrity.image || null);
   const [imageError, setImageError] = useState(false);
 
   // Update current image source when imgSrc changes
