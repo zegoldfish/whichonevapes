@@ -19,6 +19,19 @@ import { fetchWikipediaData } from "@/lib/wikipedia";
 import { rateLimit } from "@/lib/rateLimit";
 import { headers } from "next/headers";
 
+// Helper: Extract client IP address from request headers
+async function getClientIp(): Promise<string> {
+  try {
+    const headerList = await headers();
+    return (headerList.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+            headerList.get("x-real-ip") ||
+            "unknown") as string;
+  } catch {
+    // If headers are unavailable, fall back to unknown
+    return "unknown";
+  }
+}
+
 // Helper: Generate normalized matchup key for head-to-head record tracking
 function createMatchupKey(celebAId: string, celebBId: string): string {
   const ids = [celebAId, celebBId].sort();
@@ -109,15 +122,7 @@ export async function logMatchupSkip(params: {
   }
 
   // Get client IP
-  let clientIp = "unknown";
-  try {
-    const headerList = await headers();
-    clientIp = (headerList.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-               headerList.get("x-real-ip") ||
-               "unknown") as string;
-  } catch {
-    // If headers are unavailable, fall back to unknown
-  }
+  const clientIp = await getClientIp();
 
   const skip: Matchup = {
     id: crypto.randomUUID(),
@@ -155,15 +160,7 @@ export async function voteBetweenCelebrities(params: {
   const { celebAId, celebBId, winner, k } = schema.parse(params);
 
   // Per-IP rate limit to reduce vote abuse (instance-local; use shared store in prod)
-  let clientIp = "unknown";
-  try {
-    const headerList = await headers();
-    clientIp = (headerList.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-               headerList.get("x-real-ip") ||
-               "unknown") as string;
-  } catch {
-    // If headers are unavailable, fall back to unknown
-  }
+  const clientIp = await getClientIp();
   const { ok, retryAfterMs } = rateLimit({ key: `vote:${clientIp}`, windowMs: 60_000, max: 30 });
   if (!ok) {
     const waitSeconds = Math.max(1, Math.ceil((retryAfterMs || 0) / 1000));
@@ -508,13 +505,7 @@ export async function searchWikipedia(params: {
   });
   const { query, limit = 5 } = schema.parse(params);
 
-  let clientIp = "unknown";
-  try {
-    const headerList = await headers();
-    clientIp = (headerList.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-      headerList.get("x-real-ip") ||
-      "unknown") as string;
-  } catch {}
+  const clientIp = await getClientIp();
 
   const { ok, retryAfterMs } = rateLimit({ key: `wiki-search:${clientIp}`, windowMs: 60_000, max: 30 });
   if (!ok) {
@@ -636,15 +627,7 @@ export async function suggestCelebrity(params: {
   const { name, wikipediaPageId } = schema.parse(params);
 
   // Per-IP rate limit for suggestions
-  let clientIp = "unknown";
-  try {
-    const headerList = await headers();
-    clientIp = (headerList.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-               headerList.get("x-real-ip") ||
-               "unknown") as string;
-  } catch {
-    // If headers are unavailable, fall back to unknown
-  }
+  const clientIp = await getClientIp();
   const { ok, retryAfterMs } = rateLimit({ 
     key: `suggest:${clientIp}`, 
     windowMs: 300_000, // 5 minutes
@@ -730,15 +713,7 @@ export async function voteConfirmedVaper(params: {
   const { celebrityId, isVaper } = schema.parse(params);
 
   // Per-IP rate limit to reduce vote abuse
-  let clientIp = "unknown";
-  try {
-    const headerList = await headers();
-    clientIp = (headerList.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-               headerList.get("x-real-ip") ||
-               "unknown") as string;
-  } catch {
-    // If headers are unavailable, fall back to unknown
-  }
+  const clientIp = await getClientIp();
   const { ok, retryAfterMs } = rateLimit({ 
     key: `vaper-vote:${clientIp}`, 
     windowMs: 60_000, 
