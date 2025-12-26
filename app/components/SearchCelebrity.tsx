@@ -17,6 +17,7 @@ import Link from "next/link";
 import { type Celebrity } from "@/types/celebrity";
 import { searchCelebrities } from "../actions/celebrities";
 import { COLORS } from "@/lib/theme";
+import { event as gaEvent } from "@/lib/gtag";
 
 interface SearchCelebrityProps {
   onNoResults?: () => void;
@@ -43,10 +44,18 @@ export default function SearchCelebrity({ onNoResults }: SearchCelebrityProps) {
     setError(null);
 
     try {
+      // Track search input
+      gaEvent({ action: "search_input", category: "search", label: term.trim() });
       const searchResults = await searchCelebrities({ searchTerm: term });
       setResults(searchResults);
       setHasSearched(true);
       
+      // Track search results count
+      if (searchResults.length === 0) {
+        gaEvent({ action: "search_no_results", category: "search", label: term.trim() });
+      } else {
+        gaEvent({ action: "search_results", category: "search", label: `${term.trim()}:${searchResults.length}` });
+      }
       if (searchResults.length === 0 && onNoResults) {
         onNoResults();
       }
@@ -142,6 +151,13 @@ export default function SearchCelebrity({ onNoResults }: SearchCelebrityProps) {
                       backgroundColor: COLORS.background.darkText,
                     },
                   }}
+                  onClick={() =>
+                    gaEvent({
+                      action: "search_result_click",
+                      category: "search",
+                      label: `${celebrity.id}:${celebrity.slug || celebrity.name}`,
+                    })
+                  }
                 >
                   <ListItemText
                     primary={celebrity.name}

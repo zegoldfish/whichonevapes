@@ -12,6 +12,7 @@ import {
 } from "@mui/material";
 import { suggestCelebrity } from "../actions/celebrities";
 import { COLORS } from "@/lib/theme";
+import { event as gaEvent } from "@/lib/gtag";
 
 export default function CelebritySuggestionForm() {
   const [name, setName] = useState("");
@@ -33,19 +34,24 @@ export default function CelebritySuggestionForm() {
     setSuccess(null);
 
     try {
+      // Track suggestion submit
+      gaEvent({ action: "suggest_submit", category: "suggestion", label: name.trim() });
       const result = await suggestCelebrity({
         name: name.trim(),
         wikipediaPageId: wikipediaPageId.trim() || undefined,
       });
 
       if (result.success) {
+        gaEvent({ action: "suggest_success", category: "suggestion", label: name.trim() });
         setSuccess(result.message);
         setName("");
         setWikipediaPageId("");
       } else {
+        gaEvent({ action: "suggest_error", category: "suggestion", label: result.message });
         setError(result.message);
       }
     } catch (err) {
+      gaEvent({ action: "suggest_error", category: "suggestion", label: (err instanceof Error ? err.message : "unknown_error") });
       setError(err instanceof Error ? err.message : "Failed to submit suggestion");
     } finally {
       setLoading(false);
