@@ -21,6 +21,7 @@ import { getVaperLikelihood } from "@/lib/vaper";
 import { GRADIENTS, COLORS } from "@/lib/theme";
 import { useWikipediaData } from "@/app/hooks/useWikipediaData";
 import { useVaperVoting } from "@/app/hooks/useVaperVoting";
+import { MatchupShareButton } from "@/app/components/MatchupShareButton";
 
 interface VoteCardProps {
   celebrity: Celebrity;
@@ -28,6 +29,8 @@ interface VoteCardProps {
   isVoting: boolean;
   position: "left" | "right";
   voteState?: "winner" | "loser" | null;
+  pairedCelebrity?: Celebrity;
+  pairedCelebImg?: string | null;
 }
 
 export function VoteCard({
@@ -36,6 +39,8 @@ export function VoteCard({
   isVoting,
   position,
   voteState = null,
+  pairedCelebrity,
+  pairedCelebImg,
 }: VoteCardProps) {
   const { imgSrc, bio, loading: loadingImg } = useWikipediaData({
     wikipediaPageId: celebrity.wikipediaPageId,
@@ -291,6 +296,18 @@ export function VoteCard({
           >
             {isVoting ? "Submitting..." : "More likely to vape"}
           </Button>
+
+          {pairedCelebrity && (
+            <Box sx={{ mt: 2, width: "100%", display: "flex", gap: 1 }}>
+              <MatchupShareButton
+                celebA={celebrity}
+                celebB={pairedCelebrity}
+                imgA={imgSrc}
+                imgB={pairedCelebImg}
+                variant="button"
+              />
+            </Box>
+          )}
 
           <Box
             sx={{
