@@ -60,7 +60,7 @@ export async function drawMatchupCanvas(
 
   // Image dimensions
   const imgWidth = (width / 2) - 40;
-  const imgHeight = height - (includeNames ? 180 : 100);
+  const imgHeight = height - (includeNames ? 200 : 100);
   const imgY = 50;
 
   // Load and draw images
@@ -109,6 +109,18 @@ export async function drawMatchupCanvas(
     const nameY = height - 120;
     ctx.fillText(celebA.name, width / 4, nameY);
     ctx.fillText(celebB.name, (3 * width) / 4, nameY);
+    
+    // Draw ELO stats under each name
+    ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
+    ctx.font = "18px -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+    
+    const statsY = height - 90;
+    
+    // Celebrity A stats
+    ctx.fillText(`Elo: ${celebA.elo ?? 1000}`, width / 4, statsY);
+    
+    // Celebrity B stats
+    ctx.fillText(`Elo: ${celebB.elo ?? 1000}`, (3 * width) / 4, statsY);
   }
 
   // Draw "VS" in the middle
@@ -124,7 +136,7 @@ export async function drawMatchupCanvas(
     ctx.textAlign = "center";
     
     const statsY = height - 30;
-    ctx.fillText("Which One Vapes? - Rate celebrities", width / 2, statsY);
+    ctx.fillText("Which One Vapes? - whichonevapes.net", width / 2, statsY);
   }
 
   // Convert canvas to blob
