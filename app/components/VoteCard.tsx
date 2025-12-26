@@ -53,11 +53,9 @@ export function VoteCard({
 
   // Update current image source when imgSrc changes
   useEffect(() => {
-    if (imgSrc) {
-      setCurrentImgSrc(imgSrc);
-      setImageError(false);
-    }
-  }, [imgSrc]);
+    setCurrentImgSrc(imgSrc ?? null);
+    setImageError(false);
+  }, [imgSrc, celebrity.id]);
 
   const handleImageError = () => {
     if (!imageError && fallbackImgSrc && currentImgSrc !== fallbackImgSrc) {
