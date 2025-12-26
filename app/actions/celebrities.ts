@@ -1,21 +1,143 @@
 "use server";
 
 import { z } from "zod";
-import { ddb, CELEBRITIES_TABLE_NAME } from "@/lib/aws/dynamodb";
+import { ddb, CELEBRITIES_TABLE_NAME, MATCHUPS_TABLE_NAME } from "@/lib/aws/dynamodb";
 import {
   TransactWriteCommand,
   BatchGetCommand,
   ScanCommand,
   UpdateCommand,
   QueryCommand,
+  PutCommand,
 } from "@aws-sdk/lib-dynamodb";
 import {
   type Celebrity,
 } from "@/types/celebrity";
+import { type Matchup } from "@/types/matchup";
 import { buildMatchDeltas, type Winner } from "@/lib/elo";
 import { fetchWikipediaData } from "@/lib/wikipedia";
 import { rateLimit } from "@/lib/rateLimit";
 import { headers } from "next/headers";
+
+// Helper: Generate normalized matchup key for head-to-head record tracking
+function createMatchupKey(celebAId: string, celebBId: string): string {
+  const ids = [celebAId, celebBId].sort();
+  return ids.join("|");
+}
+
+// Helper: Log a matchup vote for analytics and feedback
+async function logMatchup(params: {
+  celebAId: string;
+  celebBId: string;
+  celebAName: string;
+  celebBName: string;
+  winner: "A" | "B";
+  kFactor: number;
+  celebAEloBefore: number;
+  celebBEloBefore: number;
+  celebAEloAfter: number;
+  celebBEloAfter: number;
+  clientIp: string;
+}): Promise<void> {
+  const {
+    celebAId,
+    celebBId,
+    celebAName,
+    celebBName,
+    winner,
+    kFactor,
+    celebAEloBefore,
+    celebBEloBefore,
+    celebAEloAfter,
+    celebBEloAfter,
+    clientIp,
+  } = params;
+
+  const matchup: Matchup = {
+    id: crypto.randomUUID(),
+    timestamp: new Date().toISOString(),
+    matchupKey: createMatchupKey(celebAId, celebBId),
+    eventType: "vote",
+    celebAId,
+    celebBId,
+    celebAName,
+    celebBName,
+    winner,
+    kFactor,
+    celebAEloBefore,
+    celebBEloBefore,
+    celebAEloAfter,
+    celebBEloAfter,
+    clientIp,
+  };
+
+  await ddb.send(
+    new PutCommand({
+      TableName: MATCHUPS_TABLE_NAME,
+      Item: matchup,
+    })
+  );
+}
+
+// Log a skipped matchup for engagement/feedback analytics
+export async function logMatchupSkip(params: {
+  celebAId: string;
+  celebBId: string;
+}): Promise<void> {
+  const schema = z.object({
+    celebAId: z.string().uuid(),
+    celebBId: z.string().uuid(),
+  });
+  const { celebAId, celebBId } = schema.parse(params);
+
+  // Get celeb names for denormalization
+  const batch = await ddb.send(
+    new BatchGetCommand({
+      RequestItems: {
+        [CELEBRITIES_TABLE_NAME]: {
+          Keys: [{ id: celebAId }, { id: celebBId }],
+        },
+      },
+    })
+  );
+
+  const items = (batch.Responses?.[CELEBRITIES_TABLE_NAME] || []) as Celebrity[];
+  const a = items.find((i) => i.id === celebAId);
+  const b = items.find((i) => i.id === celebBId);
+  if (!a || !b) {
+    throw new Error("One or both celebrities not found");
+  }
+
+  // Get client IP
+  let clientIp = "unknown";
+  try {
+    const headerList = await headers();
+    clientIp = (headerList.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+               headerList.get("x-real-ip") ||
+               "unknown") as string;
+  } catch {
+    // If headers are unavailable, fall back to unknown
+  }
+
+  const skip: Matchup = {
+    id: crypto.randomUUID(),
+    timestamp: new Date().toISOString(),
+    matchupKey: createMatchupKey(celebAId, celebBId),
+    eventType: "skip",
+    celebAId,
+    celebBId,
+    celebAName: a.name,
+    celebBName: b.name,
+    clientIp,
+  };
+
+  await ddb.send(
+    new PutCommand({
+      TableName: MATCHUPS_TABLE_NAME,
+      Item: skip,
+    })
+  );
+}
 
 // Record a head-to-head vote between two celebrities using Elo
 export async function voteBetweenCelebrities(params: {
@@ -108,6 +230,23 @@ export async function voteBetweenCelebrities(params: {
       ],
     })
   );
+
+  // Log the matchup (fire-and-forget to avoid blocking)
+  logMatchup({
+    celebAId,
+    celebBId,
+    celebAName: a.name,
+    celebBName: b.name,
+    winner,
+    kFactor: k || 32,
+    celebAEloBefore: a.elo ?? 1000,
+    celebBEloBefore: b.elo ?? 1000,
+    celebAEloAfter: da.newElo,
+    celebBEloAfter: db.newElo,
+    clientIp,
+  }).catch((err) => {
+    console.error("Failed to log matchup:", err);
+  });
 
   return { newA: da.newElo, newB: db.newElo };
 }

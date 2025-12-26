@@ -3,6 +3,7 @@ import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 
 const REGION = process.env.AWS_REGION || "us-east-1";
 export const CELEBRITIES_TABLE_NAME = process.env.CELEBRITIES_TABLE_NAME || "Celebrities";
+export const MATCHUPS_TABLE_NAME = process.env.MATCHUPS_TABLE_NAME || "matchups";
 
 const client = new DynamoDBClient({ region: REGION });
 
