@@ -121,7 +121,8 @@ export function VoteCard({
               style={{
                 width: "100%",
                 height: "100%",
-                objectFit: "cover",
+                objectFit: "contain",
+                objectPosition: "center top",
                 minHeight: 260,
                 maxHeight: 420,
                 filter: "saturate(1.08)",
