@@ -1,12 +1,13 @@
 "use client";
 
 import { Card, CardContent, Box, Skeleton, Typography } from "@mui/material";
+import { GRADIENTS, COLORS } from "@/lib/theme";
 
 interface Props {
   position?: "left" | "right";
 }
 
-export default function GameCardSkeleton({ position = "left" }: Props) {
+export default function GameCardSkeleton({ position: _position = "left" }: Props) {
   return (
     <Box
       sx={{
@@ -15,78 +16,178 @@ export default function GameCardSkeleton({ position = "left" }: Props) {
         display: "flex",
         flexDirection: "column",
         justifyContent: "center",
+        width: "100%",
       }}
     >
       <Card
         sx={{
-          maxWidth: { xs: 340, sm: 380, md: 420 },
           width: "100%",
+          maxWidth: { xs: 360, sm: 420, md: 460 },
           margin: "0 auto",
-          transition: "all 0.25s ease",
-          background: "linear-gradient(145deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02))",
-          backdropFilter: "blur(10px)",
-          border: "1px solid rgba(255, 255, 255, 0.08)",
-          borderRadius: 3,
+          borderRadius: 4,
           overflow: "hidden",
           position: "relative",
-          boxShadow: "0 16px 36px rgba(0,0,0,0.35)",
+          background: GRADIENTS.card,
+          border: `1px solid ${COLORS.border.light}`,
+          boxShadow: "0 16px 40px rgba(0, 0, 0, 0.35)",
         }}
       >
-        {/* Image area */}
-        <Skeleton
-          variant="rectangular"
-          animation="wave"
+        <Box
           sx={{
-            height: { xs: 260, sm: 320, md: 380 },
-            bgcolor: "rgba(255, 255, 255, 0.06)",
+            position: "relative",
+            minHeight: { xs: 260, sm: 320 },
+            background: GRADIENTS.photoSection,
+            overflow: "hidden",
           }}
-        />
-
-        <CardContent sx={{ position: "relative", zIndex: 1, p: 3 }}>
-          {/* Name */}
-          <Skeleton width="60%" height={32} sx={{ bgcolor: "rgba(255, 255, 255, 0.06)", mb: 2 }} />
-
-          {/* Bio block preview */}
-          <Box sx={{ mt: 2 }}>
-            <Skeleton sx={{ bgcolor: "rgba(255, 255, 255, 0.05)" }} />
-            <Skeleton sx={{ bgcolor: "rgba(255, 255, 255, 0.05)" }} />
-            <Skeleton width="80%" sx={{ bgcolor: "rgba(255, 255, 255, 0.05)" }} />
+        >
+          <Skeleton
+            variant="rectangular"
+            animation="wave"
+            sx={{
+              position: "absolute",
+              inset: 0,
+              bgcolor: "rgba(255, 255, 255, 0.06)",
+            }}
+          />
+          <Box
+            sx={{
+              position: "absolute",
+              inset: 0,
+              background: GRADIENTS.imageOverlay,
+              opacity: 0.9,
+            }}
+          />
+          <Box sx={{ position: "absolute", top: 14, left: 14 }}>
+            <Skeleton
+              variant="rounded"
+              width={140}
+              height={28}
+              animation="wave"
+              sx={{ bgcolor: "rgba(29, 182, 168, 0.25)" }}
+            />
           </Box>
+        </Box>
 
-          {/* Stats */}
+        <Box
+          sx={{
+            maxHeight: 120,
+            overflow: "hidden",
+            px: 3,
+            pt: 2,
+            pb: 1,
+            background: COLORS.background.overlay,
+            borderBottom: `1px solid ${COLORS.border.lighter}`,
+          }}
+        >
+          <Skeleton width="95%" sx={{ bgcolor: "rgba(255, 255, 255, 0.08)", mb: 1 }} />
+          <Skeleton width="90%" sx={{ bgcolor: "rgba(255, 255, 255, 0.08)", mb: 1 }} />
+          <Skeleton width="80%" sx={{ bgcolor: "rgba(255, 255, 255, 0.08)" }} />
+        </Box>
+
+        <CardContent sx={{ p: 3 }}>
+          <Skeleton
+            width="65%"
+            height={34}
+            animation="wave"
+            sx={{ bgcolor: "rgba(255, 255, 255, 0.14)", mb: 2 }}
+          />
+
           <Box
             sx={{
               display: "flex",
-              justifyContent: "space-around",
-              mt: 3,
-              pt: 2,
-              borderTop: "1px solid rgba(255, 255, 255, 0.1)",
+              gap: 1,
+              justifyContent: "center",
+              flexWrap: "wrap",
+              mb: 2,
+              rowGap: 1,
             }}
           >
-            <Box sx={{ textAlign: "center" }}>
-              <Typography variant="caption" sx={{ visibility: "hidden" }}>
-                Score
-              </Typography>
-              <Skeleton width={60} height={24} sx={{ bgcolor: "rgba(255, 255, 255, 0.08)" }} />
-            </Box>
-            <Box sx={{ textAlign: "center" }}>
-              <Typography variant="caption" sx={{ visibility: "hidden" }}>
-                Matches
-              </Typography>
-              <Skeleton width={60} height={24} sx={{ bgcolor: "rgba(255, 255, 255, 0.08)" }} />
+            <Skeleton
+              variant="rounded"
+              width={100}
+              height={28}
+              sx={{ bgcolor: "rgba(255, 255, 255, 0.08)" }}
+            />
+            <Skeleton
+              variant="rounded"
+              width={110}
+              height={28}
+              sx={{ bgcolor: "rgba(255, 255, 255, 0.08)" }}
+            />
+            <Skeleton
+              variant="rounded"
+              width={130}
+              height={28}
+              sx={{ bgcolor: "rgba(29, 182, 168, 0.18)" }}
+            />
+          </Box>
+
+          <Skeleton
+            variant="rounded"
+            width="100%"
+            height={52}
+            animation="wave"
+            sx={{ bgcolor: "rgba(29, 182, 168, 0.22)", mb: 2 }}
+          />
+
+          <Skeleton
+            variant="rounded"
+            width={160}
+            height={40}
+            sx={{ bgcolor: "rgba(255, 255, 255, 0.08)", mb: 2 }}
+          />
+
+          <Box
+            sx={{
+              mt: 2,
+              p: 1.5,
+              borderRadius: 2,
+              background: "rgba(255,255,255,0.03)",
+              border: `1px solid ${COLORS.border.lighter}`,
+            }}
+          >
+            <Typography
+              variant="caption"
+              sx={{
+                display: "block",
+                textTransform: "uppercase",
+                letterSpacing: "0.08em",
+                color: COLORS.text.muted,
+                mb: 1,
+              }}
+            >
+              Confirmed vaper?
+            </Typography>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 1,
+              }}
+            >
+              <Skeleton
+                variant="circular"
+                width={42}
+                height={42}
+                sx={{ bgcolor: "rgba(29, 182, 168, 0.22)" }}
+              />
+              <Skeleton
+                variant="rounded"
+                width={70}
+                height={20}
+                sx={{ bgcolor: "rgba(255, 255, 255, 0.12)" }}
+              />
+              <Skeleton
+                variant="circular"
+                width={42}
+                height={42}
+                sx={{ bgcolor: "rgba(239, 71, 111, 0.2)" }}
+              />
             </Box>
           </Box>
         </CardContent>
       </Card>
-
-      {/* Button placeholder */}
-      <Skeleton
-        variant="rounded"
-        height={40}
-        width={200}
-        animation="wave"
-        sx={{ mt: 3, alignSelf: "center", bgcolor: "rgba(255, 255, 255, 0.08)" }}
-      />
     </Box>
   );
 }
