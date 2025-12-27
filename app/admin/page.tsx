@@ -73,7 +73,7 @@ export default function AdminPage() {
     return null;
   }
 
-  const githubUsername = (session.user as any)?.login || session.user?.name || session.user?.email;
+  const githubUsername = session.user?.login || session.user?.name || session.user?.email;
 
   return (
     <Container maxWidth="md">
