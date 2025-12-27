@@ -31,6 +31,7 @@ function HomeContent() {
     winnerName: string;
   } | null>(null);
   const [lastInputMethod, setLastInputMethod] = useState<"keyboard" | "touch" | "click" | null>(null);
+  const [activeCard, setActiveCard] = useState<"A" | "B">("A");
 
   const prefetchNextPair = async () => {
     try {
@@ -74,6 +75,11 @@ function HomeContent() {
   useEffect(() => {
     fetchPair();
   }, []);
+
+  useEffect(() => {
+    // Reset active card when pair changes
+    setActiveCard("A");
+  }, [pair]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -169,10 +175,13 @@ function HomeContent() {
     const isLeftSwipe = distance > minSwipeDistance;
     const isRightSwipe = distance < -minSwipeDistance;
     
-    if (isLeftSwipe) {
-      handleVote("B"); // Swipe left votes for right card
-    } else if (isRightSwipe) {
-      handleVote("A"); // Swipe right votes for left card
+    // On mobile (stacked cards), any swipe votes for the active card
+    if (isLeftSwipe || isRightSwipe) {
+      setLastInputMethod("touch");
+      handleVote(activeCard);
+      // Reset touch state after handling a successful swipe
+      setTouchStart(null);
+      setTouchEnd(null);
     }
   };
 
@@ -269,7 +278,7 @@ function HomeContent() {
               Use ← → to vote, space to skip.
             </Typography>
             <Typography component="span" sx={{ display: { xs: "inline", md: "none" } }}>
-              Swipe left or right to vote.
+              Tap to flip · Swipe to vote
             </Typography>
           </Box>
         </Box>
@@ -281,9 +290,6 @@ function HomeContent() {
         )}
 
         <Box
-          onTouchStart={onTouchStart}
-          onTouchMove={onTouchMove}
-          onTouchEnd={onTouchEnd}
           sx={{
             display: "grid",
             gap: { xs: 3, md: 4 },
@@ -308,6 +314,11 @@ function HomeContent() {
               isVoting={voting}
               feedbackA={voteFeedback === "A"}
               feedbackB={voteFeedback === "B"}
+              activeCard={activeCard}
+              onCycleCard={() => setActiveCard(activeCard === "A" ? "B" : "A")}
+              onTouchStart={onTouchStart}
+              onTouchMove={onTouchMove}
+              onTouchEnd={onTouchEnd}
             />
           )}
         </Box>

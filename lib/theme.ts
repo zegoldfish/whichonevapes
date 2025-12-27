@@ -12,7 +12,7 @@ export const GRADIENTS = {
     "#0c1220",
 
   // Card backgrounds
-  card: "linear-gradient(145deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02))",
+  card: "linear-gradient(145deg, rgba(18,25,40,0.98), rgba(12,18,32,0.98))",
 
   // Image overlays
   imageOverlay:
