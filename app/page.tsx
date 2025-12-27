@@ -179,6 +179,9 @@ function HomeContent() {
     if (isLeftSwipe || isRightSwipe) {
       setLastInputMethod("touch");
       handleVote(activeCard);
+      // Reset touch state after handling a successful swipe
+      setTouchStart(null);
+      setTouchEnd(null);
     }
   };
 
