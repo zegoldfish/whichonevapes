@@ -576,6 +576,18 @@ export async function getUnapprovedCelebritiesPage(params: {
   const { pageSize = 10, cursor } = schema.parse(params);
   const offset = cursor ? parseInt(cursor, 10) : 0;
 
+  // Verify user is authenticated
+  const session = await auth();
+  if (!session || !session.user?.email) {
+    throw new Error("Unauthorized: You must be logged in as an admin");
+  }
+
+  // Verify user is an approved admin
+  const isAdmin = await isApprovedAdmin(session.user.email);
+  if (!isAdmin) {
+    throw new Error("Forbidden: You are not authorized to perform this action");
+  }
+
   // Use cached list and filter to unapproved
   const allCelebs = await getCachedCelebrities();
   const unapproved = allCelebs
