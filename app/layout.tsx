@@ -5,6 +5,7 @@ import "@fontsource/roboto/400.css";
 import "@fontsource/roboto/500.css";
 import "@fontsource/roboto/700.css";
 import { AppHeader } from "./components/AppHeader";
+import { AuthProvider } from "./providers";
 import { Suspense } from "react";
 import { GoogleAnalytics } from "./components/GoogleAnalytics";
 
@@ -26,13 +27,15 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <Suspense fallback={null}>
-          <GoogleAnalytics />
-        </Suspense>
-        <AppHeader />
-        <main>
-          {children}
-        </main>
+        <AuthProvider>
+          <Suspense fallback={null}>
+            <GoogleAnalytics />
+          </Suspense>
+          <AppHeader />
+          <main>
+            {children}
+          </main>
+        </AuthProvider>
       </body>
     </html>
   );
