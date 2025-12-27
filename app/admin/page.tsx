@@ -2,7 +2,7 @@
 
 import { signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   Box,
   Card,
@@ -28,7 +28,7 @@ export default function AdminPage() {
   const [loadingCelebs, setLoadingCelebs] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const loadCelebrities = async () => {
+  const loadCelebrities = useCallback(async () => {
     setLoadingCelebs(true);
     setError(null);
     try {
@@ -40,13 +40,13 @@ export default function AdminPage() {
     } finally {
       setLoadingCelebs(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     if (status === "authenticated") {
       loadCelebrities();
     }
-  }, [status]);
+  }, [status, loadCelebrities]);
 
   useEffect(() => {
     if (status === "unauthenticated") {
