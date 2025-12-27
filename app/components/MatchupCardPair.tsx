@@ -91,7 +91,7 @@ export function MatchupCardPair({
       >
         {/* Card A - back card */}
         <Box
-          onClick={activeCard === "A" && !isVoting ? onCycleCard : undefined}
+          onClick={!isVoting ? onCycleCard : undefined}
           sx={{
             position: "absolute",
             top: 0,
