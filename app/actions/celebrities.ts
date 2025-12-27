@@ -1,5 +1,6 @@
 "use server";
 
+import { auth } from "@/lib/auth";
 import { z } from "zod";
 import { ddb, CELEBRITIES_TABLE_NAME, MATCHUPS_TABLE_NAME } from "@/lib/aws/dynamodb";
 import {
@@ -9,6 +10,7 @@ import {
   UpdateCommand,
   QueryCommand,
   PutCommand,
+  DeleteCommand,
 } from "@aws-sdk/lib-dynamodb";
 import {
   type Celebrity,
@@ -758,4 +760,98 @@ export async function voteConfirmedVaper(params: {
     yesVotes: updated.confirmedVaperYesVotes ?? 0,
     noVotes: updated.confirmedVaperNoVotes ?? 0,
   };
+}
+
+// Approve a celebrity (admin only)
+export async function approveCelebrity(params: {
+  celebrityId: string;
+}): Promise<{ success: boolean; message: string }> {
+  // Verify user is authenticated
+  const session = await auth();
+  if (!session) {
+    return {
+      success: false,
+      message: "Unauthorized: You must be logged in as an admin",
+    };
+  }
+
+  const schema = z.object({
+    celebrityId: z.string().uuid(),
+  });
+  const { celebrityId } = schema.parse(params);
+
+  const now = new Date().toISOString();
+  
+  try {
+    const result = await ddb.send(
+      new UpdateCommand({
+        TableName: CELEBRITIES_TABLE_NAME,
+        Key: { id: celebrityId },
+        UpdateExpression: "SET approved = :true, updatedAt = :now",
+        ExpressionAttributeValues: {
+          ":true": true,
+          ":now": now,
+        },
+        ConditionExpression: "attribute_exists(id)",
+        ReturnValues: "ALL_NEW",
+      })
+    );
+
+    // Invalidate cache
+    cachedCelebrities = [];
+
+    return {
+      success: true,
+      message: "Celebrity approved successfully",
+    };
+  } catch (error) {
+    console.error("Error approving celebrity:", error);
+    return {
+      success: false,
+      message: "Failed to approve celebrity",
+    };
+  }
+}
+
+// Reject/delete a celebrity (admin only)
+export async function rejectCelebrity(params: {
+  celebrityId: string;
+}): Promise<{ success: boolean; message: string }> {
+  // Verify user is authenticated
+  const session = await auth();
+  if (!session) {
+    return {
+      success: false,
+      message: "Unauthorized: You must be logged in as an admin",
+    };
+  }
+
+  const schema = z.object({
+    celebrityId: z.string().uuid(),
+  });
+  const { celebrityId } = schema.parse(params);
+
+  try {
+    await ddb.send(
+      new DeleteCommand({
+        TableName: CELEBRITIES_TABLE_NAME,
+        Key: { id: celebrityId },
+        ConditionExpression: "attribute_exists(id)",
+      })
+    );
+
+    // Invalidate cache
+    cachedCelebrities = [];
+
+    return {
+      success: true,
+      message: "Celebrity rejected and removed",
+    };
+  } catch (error) {
+    console.error("Error rejecting celebrity:", error);
+    return {
+      success: false,
+      message: "Failed to reject celebrity",
+    };
+  }
 }

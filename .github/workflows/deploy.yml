@@ -87,9 +87,18 @@ jobs:
               -p 3000:3000 \
               --name whichonevapes \
               --restart unless-stopped \
-              -e HOSTNAME="0.0.0.0" \
               -e AWS_REGION="${{ env.AWS_REGION }}" \
-              -e NEXT_PUBLIC_SENTRY_DSN="${{ secrets.SENTRY_DSN }}" \
+              -e CELEBRITIES_TABLE_NAME="${{ secrets.CELEBRITIES_TABLE_NAME }}" \
+              -e CLOUDFRONT_URL="${{ secrets.CLOUDFRONT_URL }}" \
+              -e GITHUB_ID="${{ secrets.NEXTAUTH_GITHUB_ID }}" \
+              -e GITHUB_SECRET="${{ secrets.NEXTAUTH_GITHUB_SECRET }}" \
+              -e HOSTNAME="0.0.0.0" \
+              -e MATCHUPS_TABLE_NAME="${{ secrets.MATCHUPS_TABLE_NAME }}" \
               -e NEXT_PUBLIC_GA_MEASUREMENT_ID="${{ secrets.NEXT_PUBLIC_GA_MEASUREMENT_ID }}" \
+              -e NEXT_PUBLIC_SENTRY_DSN="${{ secrets.SENTRY_DSN }}" \
+              -e NEXTAUTH_SECRET="${{ secrets.NEXTAUTH_SECRET }}" \
+              -e NEXTAUTH_URL="${{ secrets.NEXTAUTH_URL }}" \
+              -e WIKIPEDIA_CACHE_BUCKET="${{ secrets.WIKIPEDIA_CACHE_BUCKET }}" \
+              -e WIKIPEDIA_CACHE_TABLE="${{ secrets.WIKIPEDIA_CACHE_TABLE }}" \
               ${{ env.DOCKER_REPOSITORY }}:${{ env.IMAGE_TAG }}
           ENDSSH
