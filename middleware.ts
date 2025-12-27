@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
-import { isApprovedAdmin } from "@/lib/admins";
 
 export async function middleware(req: NextRequest) {
   const pathname = req.nextUrl.pathname;
@@ -11,18 +10,6 @@ export async function middleware(req: NextRequest) {
 
     if (!token) {
       return NextResponse.redirect(new URL("/admin/login", req.url));
-    }
-
-    // Verify user is an approved admin
-    const email = token.email as string | undefined;
-    if (!email) {
-      return NextResponse.redirect(new URL("/admin/login", req.url));
-    }
-
-    const isAdmin = await isApprovedAdmin(email);
-    if (!isAdmin) {
-      // User is authenticated but not authorized - redirect to login with error
-      return NextResponse.redirect(new URL("/admin/login?error=unauthorized", req.url));
     }
   }
 
