@@ -2,6 +2,7 @@ import { GetCommand, DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 
 const client = new DynamoDBClient({ region: process.env.AWS_REGION || "us-east-1" });
+const ADMINS_TABLE_NAME = process.env.ADMINS_TABLE_NAME || "admins";
 const docClient = DynamoDBDocumentClient.from(client);
 
 interface AdminRecord {
@@ -32,7 +33,7 @@ export async function getAdmin(email: string): Promise<AdminRecord | null> {
   try {
     const result = await docClient.send(
       new GetCommand({
-        TableName: "admins",
+        TableName: ADMINS_TABLE_NAME,
         Key: { email: lowercaseEmail },
       })
     );
