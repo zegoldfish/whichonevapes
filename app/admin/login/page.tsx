@@ -13,7 +13,7 @@ import {
   Container,
   CircularProgress,
 } from "@mui/material";
-import { GRADIENTS, COLORS } from "@/lib/theme";
+import { GRADIENTS } from "@/lib/theme";
 
 function LoginForm() {
   const searchParams = useSearchParams();

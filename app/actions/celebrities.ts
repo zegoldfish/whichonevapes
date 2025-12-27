@@ -793,7 +793,7 @@ export async function approveCelebrity(params: {
   const now = new Date().toISOString();
   
   try {
-    const result = await ddb.send(
+    await ddb.send(
       new UpdateCommand({
         TableName: CELEBRITIES_TABLE_NAME,
         Key: { id: celebrityId },
