@@ -1,6 +1,7 @@
 "use server";
 
 import { auth } from "@/lib/auth";
+import { isApprovedAdmin } from "@/lib/admins";
 import { z } from "zod";
 import { ddb, CELEBRITIES_TABLE_NAME, MATCHUPS_TABLE_NAME } from "@/lib/aws/dynamodb";
 import {
@@ -768,10 +769,19 @@ export async function approveCelebrity(params: {
 }): Promise<{ success: boolean; message: string }> {
   // Verify user is authenticated
   const session = await auth();
-  if (!session) {
+  if (!session || !session.user?.email) {
     return {
       success: false,
       message: "Unauthorized: You must be logged in as an admin",
+    };
+  }
+
+  // Verify user is an approved admin
+  const isAdmin = await isApprovedAdmin(session.user.email);
+  if (!isAdmin) {
+    return {
+      success: false,
+      message: "Forbidden: You are not authorized to perform this action",
     };
   }
 
@@ -819,10 +829,19 @@ export async function rejectCelebrity(params: {
 }): Promise<{ success: boolean; message: string }> {
   // Verify user is authenticated
   const session = await auth();
-  if (!session) {
+  if (!session || !session.user?.email) {
     return {
       success: false,
       message: "Unauthorized: You must be logged in as an admin",
+    };
+  }
+
+  // Verify user is an approved admin
+  const isAdmin = await isApprovedAdmin(session.user.email);
+  if (!isAdmin) {
+    return {
+      success: false,
+      message: "Forbidden: You are not authorized to perform this action",
     };
   }
 
