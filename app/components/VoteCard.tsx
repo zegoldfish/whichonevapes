@@ -32,6 +32,7 @@ interface VoteCardProps {
   voteState?: "winner" | "loser" | null;
   pairedCelebrity?: Celebrity;
   pairedCelebImg?: string | null;
+  isMobileInactive?: boolean;
 }
 
 export function VoteCard({
@@ -42,6 +43,7 @@ export function VoteCard({
   voteState = null,
   pairedCelebrity,
   pairedCelebImg,
+  isMobileInactive = false,
 }: VoteCardProps) {
   const { imgSrc, fallbackImgSrc, bio, loading: loadingImg } = useWikipediaData({
     wikipediaPageId: celebrity.wikipediaPageId,
@@ -278,9 +280,9 @@ export function VoteCard({
             fullWidth
             onClick={(e) => {
               e.stopPropagation();
-              if (!isVoting) onVote();
+              if (!isVoting && !isMobileInactive) onVote();
             }}
-            disabled={isVoting}
+            disabled={isVoting || isMobileInactive}
             sx={{
               mt: 1,
               py: 1.2,
