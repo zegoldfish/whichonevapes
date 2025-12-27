@@ -75,6 +75,17 @@ export function VoteCard({
     ? "Likely Vaper"
     : null;
 
+  // Calculate tilt angle based on position and vote state
+  const getTiltTransform = () => {
+    if (voteState === "winner") {
+      const tiltDegrees = position === "left" ? -8 : 8;
+      return `translateY(-6px) scale(1.02) rotateZ(${tiltDegrees}deg)`;
+    } else if (voteState === "loser") {
+      return "translateY(0) scale(0.98)";
+    }
+    return "translateY(0)";
+  };
+
   return (
     <Box
       sx={{
@@ -102,14 +113,9 @@ export function VoteCard({
               : voteState === "loser"
               ? "inset 0 0 120px rgba(0,0,0,0.35)"
               : "0 16px 40px rgba(0, 0, 0, 0.35)",
-          transform:
-            voteState === "winner"
-              ? "translateY(-6px) scale(1.02)"
-              : voteState === "loser"
-              ? "translateY(0) scale(0.98)"
-              : "translateY(0)",
+          transform: getTiltTransform(),
           opacity: voteState === "loser" ? 0.75 : 1,
-          transition: "transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease",
+          transition: "transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease, opacity 0.2s ease",
         }}
       >
         <Box sx={{ position: "relative", minHeight: { xs: 260, sm: 320 }, background: GRADIENTS.photoSection }}>
