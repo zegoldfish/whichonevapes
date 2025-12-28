@@ -34,7 +34,12 @@ function HomeContent() {
   const [activeCard, setActiveCard] = useState<"A" | "B">("A");
   const activeCardRef = useRef<"A" | "B">("A");
   const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
-  const longPressDuration = 500; // milliseconds
+  const [longPressProgress, setLongPressProgress] = useState(0);
+  const [showLongPressIndicator, setShowLongPressIndicator] = useState(false);
+  const longPressProgressIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const longPressIndicatorDelayRef = useRef<NodeJS.Timeout | null>(null);
+  const longPressDuration = 1000; // milliseconds
+  const indicatorDelayDuration = 150; // milliseconds before showing indicator
 
   // Keep ref in sync with state
   useEffect(() => {
@@ -161,6 +166,8 @@ function HomeContent() {
     } finally {
       setVoting(false);
       setVoteFeedback(null);
+      setLongPressProgress(0);
+      setShowLongPressIndicator(false);
     }
   };
 
@@ -171,6 +178,24 @@ function HomeContent() {
     e.preventDefault();
     setTouchEnd(null);
     setTouchStart(e.targetTouches[0].clientX);
+    setLongPressProgress(0);
+    setShowLongPressIndicator(false);
+    
+    // Delay showing the indicator so quick taps don't show it
+    const indicatorDelay = setTimeout(() => {
+      setShowLongPressIndicator(true);
+    }, indicatorDelayDuration);
+    longPressIndicatorDelayRef.current = indicatorDelay;
+    
+    // Start progress animation
+    const progressInterval = setInterval(() => {
+      setLongPressProgress((prev) => {
+        const increment = (100 / longPressDuration) * 16; // Scale increment to longPressDuration
+        const next = prev + increment;
+        return next >= 100 ? 100 : next;
+      });
+    }, 16);
+    longPressProgressIntervalRef.current = progressInterval;
     
     // Start long press timer
     const timer = setTimeout(() => {
@@ -192,15 +217,35 @@ function HomeContent() {
         clearTimeout(longPressTimer);
         setLongPressTimer(null);
       }
+      if (longPressProgressIntervalRef.current) {
+        clearInterval(longPressProgressIntervalRef.current);
+        longPressProgressIntervalRef.current = null;
+      }
+      if (longPressIndicatorDelayRef.current) {
+        clearTimeout(longPressIndicatorDelayRef.current);
+        longPressIndicatorDelayRef.current = null;
+      }
+      setLongPressProgress(0);
+      setShowLongPressIndicator(false);
     }
   };
 
   const onTouchEnd = () => {
-    // Clear long press timer
+    // Clear all timers and intervals
     if (longPressTimer) {
       clearTimeout(longPressTimer);
       setLongPressTimer(null);
     }
+    if (longPressProgressIntervalRef.current) {
+      clearInterval(longPressProgressIntervalRef.current);
+      longPressProgressIntervalRef.current = null;
+    }
+    if (longPressIndicatorDelayRef.current) {
+      clearTimeout(longPressIndicatorDelayRef.current);
+      longPressIndicatorDelayRef.current = null;
+    }
+    setLongPressProgress(0);
+    setShowLongPressIndicator(false);
     
     if (!touchStart || !touchEnd || voting || !pair) {
       setTouchStart(null);
@@ -335,8 +380,52 @@ function HomeContent() {
             justifyItems: "center",
             minHeight: "62vh",
             paddingBottom: 2,
+            position: "relative",
           }}
         >
+          {/* Long press progress indicator */}
+          {showLongPressIndicator && longPressProgress > 0 && (
+            <Box
+              sx={{
+                position: "absolute",
+                top: "50%",
+                left: "50%",
+                transform: "translate(-50%, -50%)",
+                zIndex: 10,
+                display: { xs: "block", md: "none" },
+              }}
+            >
+              <Box
+                sx={{
+                  width: 60,
+                  height: 60,
+                  borderRadius: "50%",
+                  border: "3px solid rgba(29, 182, 168, 0.3)",
+                  position: "relative",
+                }}
+              >
+                <Box
+                  sx={{
+                    position: "absolute",
+                    inset: 0,
+                    borderRadius: "50%",
+                    background: `conic-gradient(
+                      rgba(29, 182, 168, 0.8) 0deg ${longPressProgress * 3.6}deg,
+                      rgba(29, 182, 168, 0.2) ${longPressProgress * 3.6}deg 360deg
+                    )`,
+                  }}
+                />
+                <Box
+                  sx={{
+                    position: "absolute",
+                    inset: 4,
+                    borderRadius: "50%",
+                    background: "rgba(12, 18, 32, 0.9)",
+                  }}
+                />
+              </Box>
+            </Box>
+          )}
           {loading || !pair ? (
             <>
               <GameCardSkeleton position="left" />
