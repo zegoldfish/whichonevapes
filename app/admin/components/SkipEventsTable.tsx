@@ -30,22 +30,21 @@ export default function SkipEventsTable({ onLoadingChange }: SkipEventsTableProp
   const [pageSize, setPageSize] = useState(10);
   const [totalCount, setTotalCount] = useState(0);
 
-  const loadSkipEvents = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const result = await getSkipEventsPage({ pageSize, pageNumber: page });
-      setSkipEvents(result.items);
-      setTotalCount(result.totalCount);
-    } catch (err) {
-      console.error("Failed to load skip events:", err);
-      setError(err instanceof Error ? err.message : "Failed to load skip events");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
+    const loadSkipEvents = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const result = await getSkipEventsPage({ pageSize, pageNumber: page });
+        setSkipEvents(result.items);
+        setTotalCount(result.totalCount);
+      } catch (err) {
+        console.error("Failed to load skip events:", err);
+        setError(err instanceof Error ? err.message : "Failed to load skip events");
+      } finally {
+        setLoading(false);
+      }
+    };
     loadSkipEvents();
   }, [page, pageSize]);
 
@@ -77,7 +76,7 @@ export default function SkipEventsTable({ onLoadingChange }: SkipEventsTableProp
   if (error) {
     return (
       <Box sx={{ textAlign: "center", py: 4 }}>
-        <Typography variant="body1" sx={{ color: COLORS.text.error || "#ff6b6b" }}>
+        <Typography variant="body1" sx={{ color: COLORS.text.error }}>
           Error: {error}
         </Typography>
       </Box>

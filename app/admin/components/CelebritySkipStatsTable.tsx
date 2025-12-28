@@ -70,7 +70,7 @@ export default function CelebritySkipStatsTable() {
   if (error) {
     return (
       <Box sx={{ textAlign: "center", py: 4 }}>
-        <Typography variant="body1" sx={{ color: COLORS.text.error || "#ff6b6b" }}>
+        <Typography variant="body1" sx={{ color: COLORS.text.error }}>
           Error: {error}
         </Typography>
       </Box>
@@ -112,7 +112,7 @@ export default function CelebritySkipStatsTable() {
                 }}
               >
                 <TableCell sx={{ color: COLORS.text.secondary, fontWeight: 600, width: "80px" }}>
-                  #{index + 1}
+                  #{page * pageSize + index + 1}
                 </TableCell>
                 <TableCell sx={{ color: COLORS.text.secondary }}>
                   {stat.celebrityName}
