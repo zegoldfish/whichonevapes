@@ -1003,7 +1003,7 @@ export async function getSkipStatsByCelebrity(params?: {
   // Aggregate skips by celebrity (both A and B)
   const skipStats = new Map<string, { name: string; count: number }>();
 
-  for (const skip of items as any[]) {
+  for (const skip of items as MatchupSkip[]) {
     // Count celebrity A skips
     const aKey = skip.celebAId;
     const aName = skip.celebAName;
