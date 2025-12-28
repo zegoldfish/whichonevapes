@@ -16,7 +16,7 @@ import {
 import {
   type Celebrity,
 } from "@/types/celebrity";
-import { type Matchup } from "@/types/matchup";
+import { type Matchup, type MatchupSkip } from "@/types/matchup";
 import { buildMatchDeltas, type Winner } from "@/lib/elo";
 import { fetchWikipediaData } from "@/lib/wikipedia";
 import { rateLimit } from "@/lib/rateLimit";
@@ -892,7 +892,7 @@ export async function getSkipEventsPage(params: {
   pageSize?: number;
   pageNumber?: number;
 }): Promise<{
-  items: Matchup[];
+  items: MatchupSkip[];
   totalCount: number;
 }> {
   const schema = z.object({
@@ -941,7 +941,7 @@ export async function getSkipEventsPage(params: {
 
   // Paginate
   const offset = pageNumber * pageSize;
-  const paginatedItems = sortedItems.slice(offset, offset + pageSize);
+  const paginatedItems = sortedItems.slice(offset, offset + pageSize) as MatchupSkip[];
 
   return {
     items: paginatedItems,
