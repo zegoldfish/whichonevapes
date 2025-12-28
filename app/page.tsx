@@ -32,6 +32,8 @@ function HomeContent() {
   } | null>(null);
   const [lastInputMethod, setLastInputMethod] = useState<"keyboard" | "touch" | "click" | null>(null);
   const [activeCard, setActiveCard] = useState<"A" | "B">("A");
+  const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
+  const longPressDuration = 500; // milliseconds
 
   const prefetchNextPair = async () => {
     try {
@@ -160,29 +162,58 @@ function HomeContent() {
   const minSwipeDistance = 50;
 
   const onTouchStart = (e: React.TouchEvent) => {
+    e.preventDefault();
     setTouchEnd(null);
     setTouchStart(e.targetTouches[0].clientX);
+    
+    // Start long press timer
+    const timer = setTimeout(() => {
+      if (!voting && pair) {
+        setLastInputMethod("touch");
+        handleVote(activeCard);
+      }
+    }, longPressDuration);
+    setLongPressTimer(timer);
   };
 
   const onTouchMove = (e: React.TouchEvent) => {
-    setTouchEnd(e.targetTouches[0].clientX);
+    const currentX = e.targetTouches[0].clientX;
+    setTouchEnd(currentX);
+    
+    // Clear long press timer if user is swiping
+    if (touchStart && Math.abs(touchStart - currentX) > minSwipeDistance) {
+      if (longPressTimer) {
+        clearTimeout(longPressTimer);
+        setLongPressTimer(null);
+      }
+    }
   };
 
   const onTouchEnd = () => {
-    if (!touchStart || !touchEnd || voting || !pair) return;
+    // Clear long press timer
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      setLongPressTimer(null);
+    }
+    
+    if (!touchStart || !touchEnd || voting || !pair) {
+      setTouchStart(null);
+      setTouchEnd(null);
+      return;
+    }
     
     const distance = touchStart - touchEnd;
     const isLeftSwipe = distance > minSwipeDistance;
     const isRightSwipe = distance < -minSwipeDistance;
     
-    // On mobile (stacked cards), any swipe votes for the active card
+    // On mobile (stacked cards), swipe cycles between cards
     if (isLeftSwipe || isRightSwipe) {
-      setLastInputMethod("touch");
-      handleVote(activeCard);
-      // Reset touch state after handling a successful swipe
-      setTouchStart(null);
-      setTouchEnd(null);
+      setActiveCard(activeCard === "A" ? "B" : "A");
     }
+    
+    // Reset touch state
+    setTouchStart(null);
+    setTouchEnd(null);
   };
 
   // Compute status indicator configuration based on current state
