@@ -886,3 +886,156 @@ export async function rejectCelebrity(params: {
     };
   }
 }
+
+// Fetch paginated skip events for admin dashboard
+export async function getSkipEventsPage(params: {
+  pageSize?: number;
+  pageNumber?: number;
+}): Promise<{
+  items: Matchup[];
+  totalCount: number;
+}> {
+  const schema = z.object({
+    pageSize: z.number().int().min(1).max(100).optional(),
+    pageNumber: z.number().int().min(0).optional(),
+  });
+
+  const { pageSize = 10, pageNumber = 0 } = schema.parse(params);
+
+  // Verify user is authenticated
+  const session = await auth();
+  if (!session || !session.user?.email) {
+    throw new Error("Unauthorized: You must be logged in as an admin");
+  }
+
+  // Verify user is an approved admin
+  const isAdmin = await isApprovedAdmin(session.user.email);
+  if (!isAdmin) {
+    throw new Error("Forbidden: You are not authorized to perform this action");
+  }
+
+  const items: Matchup[] = [];
+  let lastEvaluatedKey: Record<string, unknown> | undefined;
+
+  // Scan the entire matchups table to find skip events
+  do {
+    const scan = await ddb.send(
+      new ScanCommand({
+        TableName: MATCHUPS_TABLE_NAME,
+        FilterExpression: "eventType = :skip",
+        ExpressionAttributeValues: {
+          ":skip": "skip",
+        },
+        ExclusiveStartKey: lastEvaluatedKey,
+      })
+    );
+
+    items.push(...((scan.Items || []) as Matchup[]));
+    lastEvaluatedKey = scan.LastEvaluatedKey as Record<string, unknown> | undefined;
+  } while (lastEvaluatedKey);
+
+  // Sort by timestamp descending (newest first)
+  const sortedItems = items.sort(
+    (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+  );
+
+  // Paginate
+  const offset = pageNumber * pageSize;
+  const paginatedItems = sortedItems.slice(offset, offset + pageSize);
+
+  return {
+    items: paginatedItems,
+    totalCount: sortedItems.length,
+  };
+}
+
+// Fetch skip statistics aggregated by celebrity
+export async function getSkipStatsByCelebrity(params?: {
+  pageSize?: number;
+  pageNumber?: number;
+}): Promise<{
+  items: Array<{
+    celebrityId: string;
+    celebrityName: string;
+    skipCount: number;
+  }>;
+  totalCount: number;
+}> {
+  const schema = z.object({
+    pageSize: z.number().int().min(1).max(100).optional(),
+    pageNumber: z.number().int().min(0).optional(),
+  });
+
+  const { pageSize = 10, pageNumber = 0 } = schema.parse(params || {});
+
+  // Verify user is authenticated
+  const session = await auth();
+  if (!session || !session.user?.email) {
+    throw new Error("Unauthorized: You must be logged in as an admin");
+  }
+
+  // Verify user is an approved admin
+  const isAdmin = await isApprovedAdmin(session.user.email);
+  if (!isAdmin) {
+    throw new Error("Forbidden: You are not authorized to perform this action");
+  }
+
+  const items: Matchup[] = [];
+  let lastEvaluatedKey: Record<string, unknown> | undefined;
+
+  // Scan the entire matchups table to find skip events
+  do {
+    const scan = await ddb.send(
+      new ScanCommand({
+        TableName: MATCHUPS_TABLE_NAME,
+        FilterExpression: "eventType = :skip",
+        ExpressionAttributeValues: {
+          ":skip": "skip",
+        },
+        ExclusiveStartKey: lastEvaluatedKey,
+      })
+    );
+
+    items.push(...((scan.Items || []) as Matchup[]));
+    lastEvaluatedKey = scan.LastEvaluatedKey as Record<string, unknown> | undefined;
+  } while (lastEvaluatedKey);
+
+  // Aggregate skips by celebrity (both A and B)
+  const skipStats = new Map<string, { name: string; count: number }>();
+
+  for (const skip of items as any[]) {
+    // Count celebrity A skips
+    const aKey = skip.celebAId;
+    const aName = skip.celebAName;
+    skipStats.set(aKey, {
+      name: aName,
+      count: (skipStats.get(aKey)?.count ?? 0) + 1,
+    });
+
+    // Count celebrity B skips
+    const bKey = skip.celebBId;
+    const bName = skip.celebBName;
+    skipStats.set(bKey, {
+      name: bName,
+      count: (skipStats.get(bKey)?.count ?? 0) + 1,
+    });
+  }
+
+  // Convert to array and sort by skip count descending
+  const allStats = Array.from(skipStats.entries())
+    .map(([id, data]) => ({
+      celebrityId: id,
+      celebrityName: data.name,
+      skipCount: data.count,
+    }))
+    .sort((a, b) => b.skipCount - a.skipCount);
+
+  // Paginate
+  const offset = pageNumber * pageSize;
+  const paginatedStats = allStats.slice(offset, offset + pageSize);
+
+  return {
+    items: paginatedStats,
+    totalCount: allStats.length,
+  };
+}
