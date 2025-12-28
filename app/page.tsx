@@ -162,6 +162,7 @@ function HomeContent() {
   const minSwipeDistance = 50;
 
   const onTouchStart = (e: React.TouchEvent) => {
+    e.preventDefault();
     setTouchEnd(null);
     setTouchStart(e.targetTouches[0].clientX);
     

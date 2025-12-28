@@ -87,6 +87,9 @@ export function MatchupCardPair({
           height: "auto",
           minHeight: "62vh",
           touchAction: "pan-y", // Allow vertical scrolling but capture horizontal swipes
+          userSelect: "none",
+          WebkitUserSelect: "none",
+          WebkitTouchCallout: "none",
         }}
       >
         {/* Card A - back card */}
