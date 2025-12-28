@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense, useRef } from "react";
 import Container from "@mui/material/Container";
 import Button from "@mui/material/Button";
 import Box from "@mui/material/Box";
@@ -32,8 +32,14 @@ function HomeContent() {
   } | null>(null);
   const [lastInputMethod, setLastInputMethod] = useState<"keyboard" | "touch" | "click" | null>(null);
   const [activeCard, setActiveCard] = useState<"A" | "B">("A");
+  const activeCardRef = useRef<"A" | "B">("A");
   const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
   const longPressDuration = 500; // milliseconds
+
+  // Keep ref in sync with state
+  useEffect(() => {
+    activeCardRef.current = activeCard;
+  }, [activeCard]);
 
   const prefetchNextPair = async () => {
     try {
@@ -170,7 +176,7 @@ function HomeContent() {
     const timer = setTimeout(() => {
       if (!voting && pair) {
         setLastInputMethod("touch");
-        handleVote(activeCard);
+        handleVote(activeCardRef.current);
       }
     }, longPressDuration);
     setLongPressTimer(timer);
