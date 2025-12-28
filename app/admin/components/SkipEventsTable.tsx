@@ -76,7 +76,7 @@ export default function SkipEventsTable({ onLoadingChange }: SkipEventsTableProp
   if (error) {
     return (
       <Box sx={{ textAlign: "center", py: 4 }}>
-        <Typography variant="body1" sx={{ color: COLORS.text.error || "#ff6b6b" }}>
+        <Typography variant="body1" sx={{ color: COLORS.text.error }}>
           Error: {error}
         </Typography>
       </Box>
