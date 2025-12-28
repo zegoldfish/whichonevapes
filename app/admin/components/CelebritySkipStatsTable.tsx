@@ -112,7 +112,7 @@ export default function CelebritySkipStatsTable() {
                 }}
               >
                 <TableCell sx={{ color: COLORS.text.secondary, fontWeight: 600, width: "80px" }}>
-                  #{index + 1}
+                  #{page * pageSize + index + 1}
                 </TableCell>
                 <TableCell sx={{ color: COLORS.text.secondary }}>
                   {stat.celebrityName}
