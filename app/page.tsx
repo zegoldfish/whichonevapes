@@ -174,6 +174,23 @@ function HomeContent() {
   // Swipe and long press handlers
   const minSwipeDistance = 50;
 
+  const clearLongPressState = () => {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      setLongPressTimer(null);
+    }
+    if (longPressProgressIntervalRef.current) {
+      clearInterval(longPressProgressIntervalRef.current);
+      longPressProgressIntervalRef.current = null;
+    }
+    if (longPressIndicatorDelayRef.current) {
+      clearTimeout(longPressIndicatorDelayRef.current);
+      longPressIndicatorDelayRef.current = null;
+    }
+    setLongPressProgress(0);
+    setShowLongPressIndicator(false);
+  };
+
   const onTouchStart = (e: React.TouchEvent) => {
     e.preventDefault();
     setTouchEnd(null);
@@ -201,6 +218,7 @@ function HomeContent() {
     const timer = setTimeout(() => {
       if (!voting && pair) {
         setLastInputMethod("touch");
+        clearLongPressState();
         handleVote(activeCardRef.current);
       }
     }, longPressDuration);
@@ -213,39 +231,13 @@ function HomeContent() {
     
     // Clear long press timer if user is swiping
     if (touchStart && Math.abs(touchStart - currentX) > minSwipeDistance) {
-      if (longPressTimer) {
-        clearTimeout(longPressTimer);
-        setLongPressTimer(null);
-      }
-      if (longPressProgressIntervalRef.current) {
-        clearInterval(longPressProgressIntervalRef.current);
-        longPressProgressIntervalRef.current = null;
-      }
-      if (longPressIndicatorDelayRef.current) {
-        clearTimeout(longPressIndicatorDelayRef.current);
-        longPressIndicatorDelayRef.current = null;
-      }
-      setLongPressProgress(0);
-      setShowLongPressIndicator(false);
+      clearLongPressState();
     }
   };
 
   const onTouchEnd = () => {
     // Clear all timers and intervals
-    if (longPressTimer) {
-      clearTimeout(longPressTimer);
-      setLongPressTimer(null);
-    }
-    if (longPressProgressIntervalRef.current) {
-      clearInterval(longPressProgressIntervalRef.current);
-      longPressProgressIntervalRef.current = null;
-    }
-    if (longPressIndicatorDelayRef.current) {
-      clearTimeout(longPressIndicatorDelayRef.current);
-      longPressIndicatorDelayRef.current = null;
-    }
-    setLongPressProgress(0);
-    setShowLongPressIndicator(false);
+    clearLongPressState();
     
     if (!touchStart || !touchEnd || voting || !pair) {
       setTouchStart(null);
