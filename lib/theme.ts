@@ -52,6 +52,7 @@ export const COLORS = {
     primary: "rgba(248, 249, 250, 0.85)",
     secondary: "rgba(248, 249, 250, 0.75)",
     muted: "rgba(248, 249, 250, 0.65)",
+    error: "#ff6b6b",
   },
   border: {
     light: "rgba(255,255,255,0.08)",

@@ -16,6 +16,8 @@ import {
 } from "@mui/material";
 import { GRADIENTS, COLORS } from "@/lib/theme";
 import AdminCelebritiesTable from "@/app/admin/components/AdminCelebritiesTable";
+import SkipEventsTable from "@/app/admin/components/SkipEventsTable";
+import CelebritySkipStatsTable from "@/app/admin/components/CelebritySkipStatsTable";
 import { getUnapprovedCelebritiesPage } from "@/app/actions/celebrities";
 import { Celebrity } from "@/types/celebrity";
 
@@ -146,6 +148,30 @@ export default function AdminPage() {
                   onUpdate={loadCelebrities}
                 />
               )}
+            </Box>
+
+            <Box
+              sx={{
+                p: 3,
+                borderRadius: 2,
+                background: "rgba(255,255,255,0.03)",
+                border: "1px solid rgba(255,255,255,0.06)",
+                mb: 3,
+              }}
+            >
+              <SkipEventsTable />
+            </Box>
+
+            <Box
+              sx={{
+                p: 3,
+                borderRadius: 2,
+                background: "rgba(255,255,255,0.03)",
+                border: "1px solid rgba(255,255,255,0.06)",
+                mb: 3,
+              }}
+            >
+              <CelebritySkipStatsTable />
             </Box>
 
             <Button
