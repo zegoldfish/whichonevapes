@@ -35,6 +35,13 @@ function HomeContent() {
   const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
   const longPressDuration = 500; // milliseconds
 
+  useEffect(() => {
+    return () => {
+      if (longPressTimer) {
+        clearTimeout(longPressTimer);
+      }
+    };
+  }, [longPressTimer, pair]);
   const prefetchNextPair = async () => {
     try {
       const nextPair = await getRandomCelebrityPair();
