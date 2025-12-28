@@ -914,7 +914,7 @@ export async function getSkipEventsPage(params: {
     throw new Error("Forbidden: You are not authorized to perform this action");
   }
 
-  const items: Matchup[] = [];
+  const items: MatchupSkip[] = [];
   let lastEvaluatedKey: Record<string, unknown> | undefined;
 
   // Scan the entire matchups table to find skip events
@@ -930,7 +930,7 @@ export async function getSkipEventsPage(params: {
       })
     );
 
-    items.push(...((scan.Items || []) as Matchup[]));
+    items.push(...((scan.Items || []) as MatchupSkip[]));
     lastEvaluatedKey = scan.LastEvaluatedKey as Record<string, unknown> | undefined;
   } while (lastEvaluatedKey);
 
