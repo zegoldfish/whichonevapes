@@ -91,7 +91,6 @@ export function MatchupCardPair({
       >
         {/* Card A - back card */}
         <Box
-          onClick={!isVoting ? onCycleCard : undefined}
           sx={{
             position: "absolute",
             top: 0,
@@ -104,7 +103,7 @@ export function MatchupCardPair({
             zIndex: activeCard === "A" ? 2 : 1,
             transition: "all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)",
             pointerEvents: activeCard === "A" ? "auto" : "none",
-            cursor: activeCard === "A" && !isVoting ? "pointer" : "default",
+            cursor: "default",
           }}
         >
           <VoteCard
@@ -122,7 +121,6 @@ export function MatchupCardPair({
 
         {/* Card B - front card */}
         <Box
-          onClick={activeCard === "B" && !isVoting ? onCycleCard : undefined}
           sx={{
             position: "absolute",
             top: 0,
@@ -135,7 +133,7 @@ export function MatchupCardPair({
             zIndex: activeCard === "B" ? 2 : 1,
             transition: "all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)",
             pointerEvents: activeCard === "B" ? "auto" : "none",
-            cursor: activeCard === "B" && !isVoting ? "pointer" : "default",
+            cursor: "default",
           }}
         >
           <VoteCard

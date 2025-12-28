@@ -32,6 +32,8 @@ function HomeContent() {
   } | null>(null);
   const [lastInputMethod, setLastInputMethod] = useState<"keyboard" | "touch" | "click" | null>(null);
   const [activeCard, setActiveCard] = useState<"A" | "B">("A");
+  const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
+  const longPressDuration = 500; // milliseconds
 
   const prefetchNextPair = async () => {
     try {
@@ -156,12 +158,21 @@ function HomeContent() {
     }
   };
 
-  // Swipe gesture handlers
+  // Swipe and long press handlers
   const minSwipeDistance = 50;
 
   const onTouchStart = (e: React.TouchEvent) => {
     setTouchEnd(null);
     setTouchStart(e.targetTouches[0].clientX);
+    
+    // Start long press timer
+    const timer = setTimeout(() => {
+      if (!voting && pair) {
+        setLastInputMethod("touch");
+        handleVote(activeCard);
+      }
+    }, longPressDuration);
+    setLongPressTimer(timer);
   };
 
   const onTouchMove = (e: React.TouchEvent) => {
@@ -169,20 +180,30 @@ function HomeContent() {
   };
 
   const onTouchEnd = () => {
-    if (!touchStart || !touchEnd || voting || !pair) return;
+    // Clear long press timer
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      setLongPressTimer(null);
+    }
+    
+    if (!touchStart || !touchEnd || voting || !pair) {
+      setTouchStart(null);
+      setTouchEnd(null);
+      return;
+    }
     
     const distance = touchStart - touchEnd;
     const isLeftSwipe = distance > minSwipeDistance;
     const isRightSwipe = distance < -minSwipeDistance;
     
-    // On mobile (stacked cards), any swipe votes for the active card
+    // On mobile (stacked cards), swipe cycles between cards
     if (isLeftSwipe || isRightSwipe) {
-      setLastInputMethod("touch");
-      handleVote(activeCard);
-      // Reset touch state after handling a successful swipe
-      setTouchStart(null);
-      setTouchEnd(null);
+      setActiveCard(activeCard === "A" ? "B" : "A");
     }
+    
+    // Reset touch state
+    setTouchStart(null);
+    setTouchEnd(null);
   };
 
   // Compute status indicator configuration based on current state
@@ -278,7 +299,7 @@ function HomeContent() {
               Use ← → to vote, space to skip.
             </Typography>
             <Typography component="span" sx={{ display: { xs: "inline", md: "none" } }}>
-              Tap to flip · Swipe to vote
+              Swipe to flip · Long press to vote
             </Typography>
           </Box>
         </Box>
