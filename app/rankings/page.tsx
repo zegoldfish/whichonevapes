@@ -19,7 +19,8 @@ import ArrowOutwardIcon from "@mui/icons-material/ArrowOutward";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import RankingsPagination from "@/app/components/RankingsPagination";
-import { getRankedCelebritiesPage } from "@/app/actions/celebrities";
+import ClimbersSection from "@/app/components/ClimbersSection";
+import { getRankedCelebritiesPage, getTopClimbers } from "@/app/actions/celebrities";
 import { getVaperLikelihood } from "@/lib/vaper";
 import { eloPercentileFromRank, matchesPerDay, wilsonLowerBound, daysSince } from "@/lib/metrics";
 import { COLORS, GRADIENTS } from "@/lib/theme";
@@ -222,10 +223,30 @@ function RankingsContent() {
   const hasLoadedRef = useRef(false);
   const [totalCount, setTotalCount] = useState<number>(0);
   const [sortBy, setSortBy] = useState<string>("elo");
+  const [climbers, setClimbers] = useState<Array<{ id: string; name: string; elo: number; eloGain: number; rank: number; wins: number; matches: number; confirmedVaper: boolean; confirmedVaperYesVotes: number; confirmedVaperNoVotes: number }> | null>(null);
+  const [climbersLoading, setClimbersLoading] = useState(true);
 
   const page = cursorStack.length + 1;
   const isLoading = loading || isPending;
   const rankOffset = (page - 1) * PAGE_SIZE;
+
+  // Load climbers on initial mount
+  useEffect(() => {
+    const loadClimbers = async () => {
+      try {
+        setClimbersLoading(true);
+        const topClimbers = await getTopClimbers({ limit: 5, hoursBack: 24 });
+        setClimbers(topClimbers);
+      } catch (err) {
+        console.error("Failed to load climbers:", err);
+        setClimbers([]);
+      } finally {
+        setClimbersLoading(false);
+      }
+    };
+    
+    loadClimbers();
+  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -335,6 +356,8 @@ function RankingsContent() {
           Elo Rankings
         </Typography>
       </Box>
+
+      <ClimbersSection climbers={climbers} isLoading={climbersLoading} />
 
       <Box
         sx={{
