@@ -246,7 +246,9 @@ function RankingsContent() {
     };
     
     loadClimbers();
-  }, []);  useEffect(() => {
+  }, []);
+
+  useEffect(() => {
     const timer = setTimeout(() => {
       setSearchQuery(searchInput.trim());
     }, 300);
