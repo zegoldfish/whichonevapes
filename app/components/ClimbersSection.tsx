@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, Container, Typography, Skeleton, Card, Chip } from "@mui/material";
+import { Box, Typography, Skeleton, Card, Chip } from "@mui/material";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import Link from "next/link";
