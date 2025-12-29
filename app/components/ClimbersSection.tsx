@@ -97,7 +97,7 @@ export default function ClimbersSection({ climbers, isLoading = false }: Climber
           gap: 2,
         }}
       >
-        {climbers.map((climber, index) => {
+        {climbers.map((climber) => {
           const winRate = climber.matches > 0 ? ((climber.wins / climber.matches) * 100).toFixed(0) : "0";
 
           return (
