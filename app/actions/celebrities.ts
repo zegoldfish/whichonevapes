@@ -16,7 +16,7 @@ import {
 import {
   type Celebrity,
 } from "@/types/celebrity";
-import { type Matchup, type MatchupSkip } from "@/types/matchup";
+import { type Matchup, type MatchupSkip, type MatchupVote } from "@/types/matchup";
 import { buildMatchDeltas, type Winner } from "@/lib/elo";
 import { fetchWikipediaData } from "@/lib/wikipedia";
 import { rateLimit } from "@/lib/rateLimit";
@@ -343,10 +343,98 @@ export async function getRankedCelebritiesPage(params: {
   };
 }
 
+export async function getTopClimbers(params: {
+  limit?: number;
+  hoursBack?: number;
+} = {}): Promise<
+  Array<{
+    id: string;
+    name: string;
+    elo: number;
+    eloGain: number;
+    rank: number;
+    wins: number;
+    matches: number;
+    confirmedVaper: boolean;
+    confirmedVaperYesVotes: number;
+    confirmedVaperNoVotes: number;
+  }>
+> {
+  const { limit = 5, hoursBack = 24 } = params;
+
+  // Get all celebrities
+  const allCelebs = await getCachedCelebrities();
+  const approvedCelebs = allCelebs.filter(c => c.approved === undefined || c.approved === true);
+  const sortedByElo = approvedCelebs
+    .slice()
+    .sort((a, b) => (b.elo ?? 1000) - (a.elo ?? 1000))
+    .map((celeb, index) => ({
+      ...celeb,
+      rank: index + 1,
+    }));
+
+  // Get recent matchups from past N hours
+  const cutoffTime = new Date(Date.now() - hoursBack * 60 * 60 * 1000).toISOString();
+  const matchups: MatchupVote[] = [];
+  let lastEvaluatedKey: Record<string, unknown> | undefined;
+
+  do {
+    const scan = await ddb.send(
+      new ScanCommand({
+        TableName: MATCHUPS_TABLE_NAME,
+        FilterExpression: "#ts > :cutoff AND #et = :eventType",
+        ExpressionAttributeNames: {
+          "#ts": "timestamp",
+          "#et": "eventType",
+        },
+        ExpressionAttributeValues: {
+          ":cutoff": cutoffTime,
+          ":eventType": "vote",
+        },
+        ExclusiveStartKey: lastEvaluatedKey,
+      })
+    );
+
+    matchups.push(...((scan.Items || []) as MatchupVote[]));
+    lastEvaluatedKey = scan.LastEvaluatedKey as Record<string, unknown> | undefined;
+  } while (lastEvaluatedKey);
+
+  // Calculate ELO gains for each celebrity
+  const eloGainMap = new Map<string, number>();
+  for (const matchup of matchups) {
+    const aGain = matchup.celebAEloAfter - matchup.celebAEloBefore;
+    const bGain = matchup.celebBEloAfter - matchup.celebBEloBefore;
+
+    eloGainMap.set(matchup.celebAId, (eloGainMap.get(matchup.celebAId) ?? 0) + aGain);
+    eloGainMap.set(matchup.celebBId, (eloGainMap.get(matchup.celebBId) ?? 0) + bGain);
+  }
+
+  // Get top climbers
+  const climbers = sortedByElo
+    .map((celeb) => ({
+      id: celeb.id,
+      name: celeb.name,
+      elo: celeb.elo ?? 1000,
+      eloGain: eloGainMap.get(celeb.id) ?? 0,
+      rank: celeb.rank,
+      wins: celeb.wins ?? 0,
+      matches: celeb.matches ?? 0,
+      confirmedVaper: celeb.confirmedVaper ?? false,
+      confirmedVaperYesVotes: celeb.confirmedVaperYesVotes ?? 0,
+      confirmedVaperNoVotes: celeb.confirmedVaperNoVotes ?? 0,
+    }))
+    .filter((c) => c.eloGain > 0) // Only show positive gains
+    .sort((a, b) => b.eloGain - a.eloGain)
+    .slice(0, limit);
+
+  return climbers;
+}
+
 // Simple in-memory cache for celebrity list (refreshed periodically)
 let cachedCelebrities: Celebrity[] = [];
 let lastCacheUpdate = 0;
 const CACHE_TTL_MS = 300_000; // 5 minutes
+
 
 async function getCachedCelebrities(): Promise<Celebrity[]> {
   const now = Date.now();
