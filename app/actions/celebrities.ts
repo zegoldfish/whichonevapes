@@ -435,7 +435,6 @@ let cachedCelebrities: Celebrity[] = [];
 let lastCacheUpdate = 0;
 const CACHE_TTL_MS = 300_000; // 5 minutes
 
-
 async function getCachedCelebrities(): Promise<Celebrity[]> {
   const now = Date.now();
   
