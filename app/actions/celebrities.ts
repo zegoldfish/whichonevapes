@@ -537,7 +537,7 @@ export async function getCelebrityBySlug(slug: string): Promise<Celebrity | null
     })
   );
 
-  const celeb = ((result.Items?.[0] as Celebrity | null) || null);
+  const celeb = result.Items?.[0] as Celebrity | null;
   const normalized = celeb ? normalizeCelebrityStatus(celeb) : null;
   if (normalized) {
     // Update cache entry for future calls
