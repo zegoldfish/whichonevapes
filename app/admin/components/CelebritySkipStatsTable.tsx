@@ -1,5 +1,6 @@
 "use client";
 
+import type React from "react";
 import { useState, useEffect } from "react";
 import {
   Box,
@@ -13,9 +14,10 @@ import {
   Typography,
   CircularProgress,
   TablePagination,
+  Button,
 } from "@mui/material";
 import { COLORS } from "@/lib/theme";
-import { getSkipStatsByCelebrity } from "@/app/actions/celebrities";
+import { getSkipStatsByCelebrity, retireCelebrity } from "@/app/actions/celebrities";
 
 interface SkipStat {
   celebrityId: string;
@@ -30,6 +32,7 @@ export default function CelebritySkipStatsTable() {
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(10);
   const [totalCount, setTotalCount] = useState(0);
+  const [retiringId, setRetiringId] = useState<string | null>(null);
 
   useEffect(() => {
     const loadStats = async () => {
@@ -100,6 +103,7 @@ export default function CelebritySkipStatsTable() {
               <TableCell sx={{ color: COLORS.text.primary, fontWeight: 600 }}>Rank</TableCell>
               <TableCell sx={{ color: COLORS.text.primary, fontWeight: 600 }}>Celebrity Name</TableCell>
               <TableCell align="right" sx={{ color: COLORS.text.primary, fontWeight: 600 }}>Skip Count</TableCell>
+              <TableCell align="right" sx={{ color: COLORS.text.primary, fontWeight: 600 }}>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -119,6 +123,33 @@ export default function CelebritySkipStatsTable() {
                 </TableCell>
                 <TableCell align="right" sx={{ color: COLORS.text.secondary, fontWeight: 600 }}>
                   {stat.skipCount}
+                </TableCell>
+                <TableCell align="right">
+                  <Button
+                    variant="outlined"
+                    color="warning"
+                    size="small"
+                    disabled={retiringId === stat.celebrityId}
+                    onClick={async () => {
+                      setRetiringId(stat.celebrityId);
+                      setError(null);
+                      try {
+                        const result = await retireCelebrity({ celebrityId: stat.celebrityId });
+                        if (!result.success) {
+                          throw new Error(result.message);
+                        }
+                        setStats((prev) => prev.filter((s) => s.celebrityId !== stat.celebrityId));
+                        setTotalCount((prev) => Math.max(0, prev - 1));
+                      } catch (err) {
+                        console.error("Failed to retire celebrity:", err);
+                        setError(err instanceof Error ? err.message : "Failed to retire celebrity");
+                      } finally {
+                        setRetiringId(null);
+                      }
+                    }}
+                  >
+                    {retiringId === stat.celebrityId ? "Retiring..." : "Retire"}
+                  </Button>
                 </TableCell>
               </TableRow>
             ))}
