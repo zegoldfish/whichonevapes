@@ -1063,7 +1063,9 @@ export async function retireCelebrity(params: {
       })
     );
 
-    cachedCelebrities = cachedCelebrities.filter((c) => c.id !== celebrityId);
+    cachedCelebrities = cachedCelebrities.map((c) =>
+      c.id === celebrityId ? { ...c, status: "retired", updatedAt: now } : c
+    );
 
     return {
       success: true,
