@@ -16,6 +16,7 @@ export const CelebritySchema = z.object({
   confirmedVaperYesVotes: z.number().int().min(0).default(0),
   confirmedVaperNoVotes: z.number().int().min(0).default(0),
   approved: z.boolean().default(true),
+  status: z.enum(["active", "retired"]).default("active"),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });
@@ -40,6 +41,7 @@ export const UpdateCelebrityInputSchema = z.object({
   confirmedVaper: z.boolean().optional(),
   confirmedVaperYesVotes: z.number().int().min(0).optional(),
   confirmedVaperNoVotes: z.number().int().min(0).optional(),
+  status: z.enum(["active", "retired"]).optional(),
 });
 
 export type UpdateCelebrityInput = z.infer<typeof UpdateCelebrityInputSchema>;

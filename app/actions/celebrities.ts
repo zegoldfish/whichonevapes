@@ -13,9 +13,7 @@ import {
   PutCommand,
   DeleteCommand,
 } from "@aws-sdk/lib-dynamodb";
-import {
-  type Celebrity,
-} from "@/types/celebrity";
+import { type Celebrity } from "@/types/celebrity";
 import { type Matchup, type MatchupSkip, type MatchupVote } from "@/types/matchup";
 import { buildMatchDeltas, type Winner } from "@/lib/elo";
 import { fetchWikipediaData } from "@/lib/wikipedia";
@@ -39,6 +37,16 @@ async function getClientIp(): Promise<string> {
 function createMatchupKey(celebAId: string, celebBId: string): string {
   const ids = [celebAId, celebBId].sort();
   return ids.join("|");
+}
+
+const DEFAULT_STATUS: Celebrity["status"] = "active";
+
+function normalizeCelebrityStatus(celeb: Celebrity): Celebrity {
+  return { ...celeb, status: celeb.status ?? DEFAULT_STATUS };
+}
+
+function isActiveCelebrity(celeb: Celebrity | undefined): celeb is Celebrity {
+  return !!celeb && (celeb.status ?? DEFAULT_STATUS) === "active";
 }
 
 // Helper: Log a matchup vote for analytics and feedback
@@ -125,11 +133,16 @@ export async function logMatchupSkip(params: {
     })
   );
 
-  const items = (batch.Responses?.[CELEBRITIES_TABLE_NAME] || []) as Celebrity[];
+  const items = ((batch.Responses?.[CELEBRITIES_TABLE_NAME] || []) as Celebrity[]).map(
+    normalizeCelebrityStatus
+  );
   const a = items.find((i) => i.id === celebAId);
   const b = items.find((i) => i.id === celebBId);
   if (!a || !b) {
     throw new Error("One or both celebrities not found");
+  }
+  if (!isActiveCelebrity(a) || !isActiveCelebrity(b)) {
+    throw new Error("One or both celebrities are retired");
   }
 
   const skip: Matchup = {
@@ -186,11 +199,16 @@ export async function voteBetweenCelebrities(params: {
     })
   );
 
-  const items = (batch.Responses?.[CELEBRITIES_TABLE_NAME] || []) as Celebrity[];
+  const items = ((batch.Responses?.[CELEBRITIES_TABLE_NAME] || []) as Celebrity[]).map(
+    normalizeCelebrityStatus
+  );
   const a = items.find((i) => i.id === celebAId);
   const b = items.find((i) => i.id === celebBId);
   if (!a || !b) {
     throw new Error("One or both celebrities not found");
+  }
+  if (!isActiveCelebrity(a) || !isActiveCelebrity(b)) {
+    throw new Error("One or both celebrities are retired");
   }
 
   const { a: da, b: db } = buildMatchDeltas(a.elo ?? 1000, b.elo ?? 1000, winner, k);
@@ -212,8 +230,13 @@ export async function voteBetweenCelebrities(params: {
               ":one": 1,
               ":now": now,
               ":pk": ELO_GSI_PARTITION_VALUE,
+              ":active": DEFAULT_STATUS,
             },
-            ConditionExpression: "attribute_exists(id)",
+            ExpressionAttributeNames: {
+              "#status": "status",
+            },
+            ConditionExpression:
+              "attribute_exists(id) AND (attribute_not_exists(#status) OR #status = :active)",
           },
         },
         {
@@ -228,8 +251,13 @@ export async function voteBetweenCelebrities(params: {
               ":one": 1,
               ":now": now,
               ":pk": ELO_GSI_PARTITION_VALUE,
+              ":active": DEFAULT_STATUS,
             },
-            ConditionExpression: "attribute_exists(id)",
+            ExpressionAttributeNames: {
+              "#status": "status",
+            },
+            ConditionExpression:
+              "attribute_exists(id) AND (attribute_not_exists(#status) OR #status = :active)",
           },
         },
       ],
@@ -269,7 +297,7 @@ export async function getAllCelebrities(): Promise<Celebrity[]> {
       })
     );
 
-    items.push(...((page.Items || []) as Celebrity[]));
+    items.push(...((page.Items || []) as Celebrity[]).map(normalizeCelebrityStatus));
     lastEvaluatedKey = page.LastEvaluatedKey as Record<string, unknown> | undefined;
   } while (lastEvaluatedKey);
 
@@ -303,8 +331,10 @@ export async function getRankedCelebritiesPage(params: {
   // Load all celebrities from cache (refreshed every 5 min)
   const allCelebs = await getCachedCelebrities();
   
-  // Filter to only approved celebrities
-  const approvedCelebs = allCelebs.filter(c => c.approved === undefined || c.approved === true);
+  // Filter to only approved, active celebrities
+  const approvedCelebs = allCelebs.filter(
+    (c) => (c.approved === undefined || c.approved === true) && isActiveCelebrity(c)
+  );
   
   // Sort by Elo descending
   const sortedCelebs = approvedCelebs
@@ -364,7 +394,9 @@ export async function getTopClimbers(params: {
 
   // Get all celebrities
   const allCelebs = await getCachedCelebrities();
-  const approvedCelebs = allCelebs.filter(c => c.approved === undefined || c.approved === true);
+  const approvedCelebs = allCelebs.filter(
+    (c) => (c.approved === undefined || c.approved === true) && isActiveCelebrity(c)
+  );
   const sortedByElo = approvedCelebs
     .slice()
     .sort((a, b) => (b.elo ?? 1000) - (a.elo ?? 1000))
@@ -454,7 +486,7 @@ async function getCachedCelebrities(): Promise<Celebrity[]> {
       lastEvaluatedKey = scan.LastEvaluatedKey as Record<string, unknown> | undefined;
     } while (lastEvaluatedKey);
 
-    cachedCelebrities = items;
+    cachedCelebrities = items.map(normalizeCelebrityStatus);
     lastCacheUpdate = now;
   }
 
@@ -476,7 +508,9 @@ export async function getCelebrityById(id: string): Promise<Celebrity | null> {
       },
     })
   );
-  const items = (batch.Responses?.[CELEBRITIES_TABLE_NAME] || []) as Celebrity[];
+  const items = ((batch.Responses?.[CELEBRITIES_TABLE_NAME] || []) as Celebrity[]).map(
+    normalizeCelebrityStatus
+  );
   const celeb = items[0];
   if (celeb) {
     // Update cache entry for future calls
@@ -503,12 +537,13 @@ export async function getCelebrityBySlug(slug: string): Promise<Celebrity | null
     })
   );
 
-  const celeb = (result.Items?.[0] || null) as Celebrity | null;
-  if (celeb) {
+  const celeb = ((result.Items?.[0] as Celebrity | null) || null);
+  const normalized = celeb ? normalizeCelebrityStatus(celeb) : null;
+  if (normalized) {
     // Update cache entry for future calls
-    cachedCelebrities = [...cachedCelebrities.filter((c) => c.id !== celeb.id), celeb];
+    cachedCelebrities = [...cachedCelebrities.filter((c) => c.id !== normalized.id), normalized];
   }
-  return celeb;
+  return normalized;
 }
 
 // Fetch a random pair of celebrities
@@ -518,8 +553,10 @@ export async function getRandomCelebrityPair(): Promise<{
 }> {
   const items = await getCachedCelebrities();
 
-  // Filter to only approved celebrities
-  const approvedItems = items.filter(c => c.approved === undefined || c.approved === true);
+  // Filter to only approved, active celebrities
+  const approvedItems = items.filter(
+    (c) => (c.approved === undefined || c.approved === true) && isActiveCelebrity(c)
+  );
 
   if (approvedItems.length < 2) {
     throw new Error("Not enough celebrities in database");
@@ -555,7 +592,9 @@ export async function enrichCelebrityWithWikipedia(
     })
   );
 
-  const items = (batch.Responses?.[CELEBRITIES_TABLE_NAME] || []) as Celebrity[];
+  const items = ((batch.Responses?.[CELEBRITIES_TABLE_NAME] || []) as Celebrity[]).map(
+    normalizeCelebrityStatus
+  );
   const celebrity = items[0];
   
   if (!celebrity) {
@@ -787,6 +826,7 @@ export async function suggestCelebrity(params: {
     confirmedVaperYesVotes: 0,
     confirmedVaperNoVotes: 0,
     approved: false,
+    status: DEFAULT_STATUS,
     createdAt: now,
     updatedAt: now,
   };
@@ -842,11 +882,16 @@ export async function voteConfirmedVaper(params: {
       TableName: CELEBRITIES_TABLE_NAME,
       Key: { id: celebrityId },
       UpdateExpression: `SET updatedAt = :now ADD ${voteAttribute} :one`,
+      ExpressionAttributeNames: {
+        "#status": "status",
+      },
       ExpressionAttributeValues: {
         ":now": now,
         ":one": 1,
+        ":active": DEFAULT_STATUS,
       },
-      ConditionExpression: "attribute_exists(id)",
+      ConditionExpression:
+        "attribute_exists(id) AND (attribute_not_exists(#status) OR #status = :active)",
       ReturnValues: "ALL_NEW",
     })
   );
@@ -970,6 +1015,65 @@ export async function rejectCelebrity(params: {
     return {
       success: false,
       message: "Failed to reject celebrity",
+    };
+  }
+}
+
+// Retire (deactivate) a celebrity (admin only)
+export async function retireCelebrity(params: {
+  celebrityId: string;
+}): Promise<{ success: boolean; message: string }> {
+  const session = await auth();
+  if (!session || !session.user?.email) {
+    return {
+      success: false,
+      message: "Unauthorized: You must be logged in as an admin",
+    };
+  }
+
+  const isAdmin = await isApprovedAdmin(session.user.email);
+  if (!isAdmin) {
+    return {
+      success: false,
+      message: "Forbidden: You are not authorized to perform this action",
+    };
+  }
+
+  const schema = z.object({
+    celebrityId: z.string().uuid(),
+  });
+  const { celebrityId } = schema.parse(params);
+
+  const now = new Date().toISOString();
+
+  try {
+    await ddb.send(
+      new UpdateCommand({
+        TableName: CELEBRITIES_TABLE_NAME,
+        Key: { id: celebrityId },
+        UpdateExpression: "SET #status = :retired, updatedAt = :now",
+        ExpressionAttributeNames: {
+          "#status": "status",
+        },
+        ExpressionAttributeValues: {
+          ":retired": "retired",
+          ":now": now,
+        },
+        ConditionExpression: "attribute_exists(id)",
+      })
+    );
+
+    cachedCelebrities = cachedCelebrities.filter((c) => c.id !== celebrityId);
+
+    return {
+      success: true,
+      message: "Celebrity retired successfully",
+    };
+  } catch (error) {
+    console.error("Error retiring celebrity:", error);
+    return {
+      success: false,
+      message: "Failed to retire celebrity",
     };
   }
 }
@@ -1108,6 +1212,11 @@ export async function getSkipStatsByCelebrity(params?: {
     });
   }
 
+  // Keep only active celebrities
+  const activeIds = new Set(
+    (await getCachedCelebrities()).filter(isActiveCelebrity).map((c) => c.id)
+  );
+
   // Convert to array and sort by skip count descending
   const allStats = Array.from(skipStats.entries())
     .map(([id, data]) => ({
@@ -1115,6 +1224,7 @@ export async function getSkipStatsByCelebrity(params?: {
       celebrityName: data.name,
       skipCount: data.count,
     }))
+    .filter((stat) => activeIds.has(stat.celebrityId))
     .sort((a, b) => b.skipCount - a.skipCount);
 
   // Paginate
