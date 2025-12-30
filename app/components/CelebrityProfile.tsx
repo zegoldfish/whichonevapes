@@ -135,6 +135,23 @@ export function CelebrityProfile({ celebrity }: CelebrityProfileProps) {
             }}
           />
         )}
+        {celebrity.status === "retired" && (
+          <Tooltip title="Retired Celebs have been removed from the game. They are not eligible for future matchups." arrow>
+            <Chip
+              label="Retired"
+              size="small"
+              sx={{
+                position: "absolute",
+                top: badgeText ? 54 : 14,
+                left: 14,
+                fontWeight: 700,
+                background: "rgba(158, 158, 158, 0.9)",
+                color: "#0b0d14",
+                boxShadow: "0 8px 20px rgba(0,0,0,0.2)",
+              }}
+            />
+          </Tooltip>
+        )}
       </Box>
 
       <CardContent sx={{ p: 3 }}>
