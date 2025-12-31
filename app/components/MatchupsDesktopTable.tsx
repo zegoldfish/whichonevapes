@@ -69,7 +69,7 @@ export function MatchupsDesktopTable({
             letterSpacing: "0.05em",
           }}
         >
-          Winner ELO
+          Winner Elo
         </Typography>
         <Typography
           variant="caption"
@@ -93,7 +93,7 @@ export function MatchupsDesktopTable({
             letterSpacing: "0.05em",
           }}
         >
-          Loser ELO
+          Loser Elo
         </Typography>
         <Typography
           variant="caption"
