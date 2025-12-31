@@ -1276,7 +1276,6 @@ export async function getRecentMatchups(): Promise<MatchupVote[]> {
   } while (lastEvaluatedKey);
 
   const matchups = allItems
-    .filter((m) => m.eventType === "vote")
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()) as MatchupVote[];
 
   // Update cache
