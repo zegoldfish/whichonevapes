@@ -15,7 +15,7 @@ import GameCardSkeleton from "./components/GameCardSkeleton";
 import { COLORS } from "@/lib/theme";
 import { MatchupCardPair } from "./components/MatchupCardPair";
 import { event as gaEvent } from "@/lib/gtag";
-import { useVoteStreak } from "./hooks/useVoteStreak";
+import { useVoteStreak, STREAK_MILESTONES } from "./hooks/useVoteStreak";
 import { VoteStreakDisplay } from "./components/VoteStreakDisplay";
 import { StreakMilestoneAlert } from "./components/StreakMilestoneAlert";
 
@@ -522,7 +522,7 @@ function HomeContent() {
           onClose={dismissFeedback}
           isVoteMilestone={
             streakMilestone !== null &&
-            [5, 10, 25, 50, 100, 250, 500, 1000].includes(streakMilestone)
+            STREAK_MILESTONES.includes(streakMilestone)
           }
         />
       </Box>

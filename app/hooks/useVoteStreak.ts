@@ -18,7 +18,7 @@ interface UseVoteStreakReturn {
 }
 
 const STORAGE_KEY = "voteStats";
-const STREAK_MILESTONES = [5, 10, 25, 50, 100, 250, 500, 1000];
+export const STREAK_MILESTONES = [5, 10, 25, 50, 100, 250, 500, 1000];
 
 const getDefaultStats = (): VoteStats => ({
   totalVotes: 0,
