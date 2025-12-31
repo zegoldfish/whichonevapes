@@ -20,6 +20,7 @@ import {
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import CloseIcon from "@mui/icons-material/Close";
+import TwitterIcon from "@mui/icons-material/Twitter";
 import { event as gaEvent } from "@/lib/gtag";
 
 export function AppHeader() {
@@ -33,6 +34,7 @@ export function AppHeader() {
     { href: "/rankings", label: "Rankings" },
     { href: "/matchups", label: "Matchups" },
     { href: "/about", label: "About" },
+    { href: "https://twitter.com/whichonevapes", label: "Twitter" },
   ];
 
   const toggleMobileMenu = () => {
@@ -102,7 +104,7 @@ export function AppHeader() {
                     },
                   }}
                 >
-                  {link.label}
+                  {link.label === "Twitter" ? <TwitterIcon /> : link.label}
                 </Button>
               ))}
             </Stack>
@@ -161,16 +163,31 @@ export function AppHeader() {
                     },
                   }}
                 >
-                  <ListItemText
-                    primary={link.label}
-                    sx={{
-                      "& .MuiListItemText-primary": {
-                        color: "var(--text)",
-                        fontWeight: 600,
-                        fontSize: "1.1rem",
-                      },
-                    }}
-                  />
+                  {link.label === "Twitter" ? (
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      <TwitterIcon sx={{ color: "var(--text)" }} />
+                      <ListItemText
+                        sx={{
+                          "& .MuiListItemText-primary": {
+                            color: "var(--text)",
+                            fontWeight: 600,
+                            fontSize: "1.1rem",
+                          },
+                        }}
+                      />
+                    </Box>
+                  ) : (
+                    <ListItemText
+                      primary={link.label}
+                      sx={{
+                        "& .MuiListItemText-primary": {
+                          color: "var(--text)",
+                          fontWeight: 600,
+                          fontSize: "1.1rem",
+                        },
+                      }}
+                    />
+                  )}
                 </ListItemButton>
               </ListItem>
             ))}

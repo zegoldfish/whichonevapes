@@ -109,7 +109,7 @@ export default function MatchupsPage() {
         </Typography>
         <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
           <Typography variant="body2" sx={{ color: COLORS.text?.muted || "#999" }}>
-            Latest voting results with ELO rating changes
+            Latest voting results with Elo rating changes
           </Typography>
           <Typography variant="caption" sx={{ color: COLORS.text?.muted || "#666" }}>
             💾 Results are cached and refreshed every 5 minutes
