@@ -169,16 +169,17 @@ export default function AboutPage() {
                   background: "rgba(29, 182, 168, 0.1)",
                   border: "1px solid rgba(29, 182, 168, 0.2)",
                   borderRadius: 2,
-                  p: 2,
-                  mb: 2,
-                  fontFamily: "monospace",
-                  fontSize: "0.85rem",
+                  p: 2.5,
+                  mb: 2.5,
                   color: "rgba(248,249,250,0.8)",
-                  overflowX: "auto",
                 }}
               >
-                <div>E_A = 1 / (1 + 10<sup>((B-A)/400)</sup>)</div>
-                <div sx={{ mt: 1 }}>new = current + K × (actual - expected)</div>
+                <Typography sx={{ fontFamily: "Georgia, serif", fontSize: "1.1rem", mb: 1.5, color: "rgba(248,249,250,0.9)" }}>
+                  <strong>Expected Score:</strong> E<sub>A</sub> = 1 / (1 + 10<sup>(B−A)/400</sup>)
+                </Typography>
+                <Typography sx={{ fontFamily: "Georgia, serif", fontSize: "1.1rem", color: "rgba(248,249,250,0.9)" }}>
+                  <strong>Rating Update:</strong> new = current + K × (actual − expected)
+                </Typography>
               </Box>
               <Typography
                 sx={{
