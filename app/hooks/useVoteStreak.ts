@@ -42,13 +42,18 @@ const isToday = (dateString: string | null): boolean => {
 const isYesterday = (dateString: string | null): boolean => {
   if (!dateString) return false;
   const date = new Date(dateString);
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  return (
-    date.getDate() === yesterday.getDate() &&
-    date.getMonth() === yesterday.getMonth() &&
-    date.getFullYear() === yesterday.getFullYear()
-  );
+
+  // Normalize the input date to local midnight
+  const inputDate = new Date(date);
+  inputDate.setHours(0, 0, 0, 0);
+
+  // Compute yesterday relative to today's local midnight
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+
+  return inputDate.getTime() === yesterday.getTime();
 };
 
 /**
