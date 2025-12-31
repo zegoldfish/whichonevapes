@@ -162,7 +162,7 @@ export default function MatchupsPage() {
         )}
       </Box>
 
-      {matchups.length === 0 ? (
+      {filteredMatchups.length === 0 ? (
         <Box
           sx={{
             p: 3,
