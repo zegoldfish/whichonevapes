@@ -15,6 +15,9 @@ import GameCardSkeleton from "./components/GameCardSkeleton";
 import { COLORS } from "@/lib/theme";
 import { MatchupCardPair } from "./components/MatchupCardPair";
 import { event as gaEvent } from "@/lib/gtag";
+import { useVoteStreak } from "./hooks/useVoteStreak";
+import { VoteStreakDisplay } from "./components/VoteStreakDisplay";
+import { StreakMilestoneAlert } from "./components/StreakMilestoneAlert";
 
 function HomeContent() {
   const [pair, setPair] = useState<{ a: Celebrity; b: Celebrity } | null>(null);
@@ -40,6 +43,9 @@ function HomeContent() {
   const longPressIndicatorDelayRef = useRef<NodeJS.Timeout | null>(null);
   const longPressDuration = 1000; // milliseconds
   const indicatorDelayDuration = 150; // milliseconds before showing indicator
+
+  // Vote tracking hook
+  const { stats, recordVote, resetStats, showStreakFeedback, streakMilestone } = useVoteStreak();
 
   // Keep ref in sync with state
   useEffect(() => {
@@ -159,6 +165,8 @@ function HomeContent() {
         await fetchPair();
       }
       setLastVote(voteContext);
+      // Record vote for streak tracking
+      recordVote();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to record vote");
       // On error, try to fetch a new pair
@@ -326,6 +334,15 @@ function HomeContent() {
             </Button>
           </Stack>
         </Box>
+
+        {/* Vote Stats Display */}
+        <VoteStreakDisplay
+          totalVotes={stats.totalVotes}
+          currentStreak={stats.currentStreak}
+          longestStreak={stats.longestStreak}
+          votesToday={stats.votesToday}
+          onReset={resetStats}
+        />
 
         <Box
           sx={{
@@ -496,6 +513,17 @@ function HomeContent() {
               letterSpacing: "0.01em",
             },
           }}
+        />
+
+        {/* Streak Milestone Alert */}
+        <StreakMilestoneAlert
+          open={showStreakFeedback}
+          milestone={streakMilestone}
+          onClose={() => {}}
+          isVoteMilestone={
+            streakMilestone !== null &&
+            [5, 10, 25, 50, 100, 250, 500, 1000].includes(streakMilestone)
+          }
         />
       </Box>
     </Container>
