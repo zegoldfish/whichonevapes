@@ -34,7 +34,7 @@ export default function AboutPage() {
               letterSpacing: "-0.02em",
             }}
           >
-            About This Game
+            About Which One Vapes
           </Typography>
           <Typography
             variant="h6"
