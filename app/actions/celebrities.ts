@@ -1252,18 +1252,30 @@ export async function getRecentMatchups(): Promise<MatchupVote[]> {
     return cachedMatchups;
   }
 
-  // Scan matchups table sorted by timestamp descending
-  const result = await ddb.send(
-    new ScanCommand({
-      TableName: MATCHUPS_TABLE_NAME,
-      FilterExpression: "eventType = :vote",
-      ExpressionAttributeValues: {
-        ":vote": "vote",
-      },
-    })
-  );
+  // Scan matchups table and paginate through all results
+  const allItems: Matchup[] = [];
+  let lastEvaluatedKey: Record<string, unknown> | undefined;
 
-  const matchups = ((result.Items || []) as Matchup[])
+  do {
+    const result = await ddb.send(
+      new ScanCommand({
+        TableName: MATCHUPS_TABLE_NAME,
+        FilterExpression: "eventType = :vote",
+        ExpressionAttributeValues: {
+          ":vote": "vote",
+        },
+        ExclusiveStartKey: lastEvaluatedKey,
+      })
+    );
+
+    if (result.Items && result.Items.length > 0) {
+      allItems.push(...(result.Items as Matchup[]));
+    }
+
+    lastEvaluatedKey = result.LastEvaluatedKey as Record<string, unknown> | undefined;
+  } while (lastEvaluatedKey);
+
+  const matchups = allItems
     .filter((m) => m.eventType === "vote")
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()) as MatchupVote[];
 
