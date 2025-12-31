@@ -1,6 +1,7 @@
 "use client";
 
-import { Box, Typography, Chip, Tooltip, IconButton } from "@mui/material";
+import { useState } from "react";
+import { Box, Typography, Chip, Tooltip, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, Button } from "@mui/material";
 import LocalFireDepartmentIcon from "@mui/icons-material/LocalFireDepartment";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import TodayIcon from "@mui/icons-material/Today";
@@ -22,6 +23,20 @@ export function VoteStreakDisplay({
   votesToday,
   onReset,
 }: VoteStreakDisplayProps) {
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
+
+  const handleResetClick = () => {
+    setResetDialogOpen(true);
+  };
+
+  const handleResetConfirm = () => {
+    setResetDialogOpen(false);
+    onReset?.();
+  };
+
+  const handleResetCancel = () => {
+    setResetDialogOpen(false);
+  };
   const getStreakColor = (streak: number): string => {
     if (streak >= 100) return "#EF476F";
     if (streak >= 50) return "#FF9F1C";
@@ -211,7 +226,7 @@ export function VoteStreakDisplay({
         <Tooltip title="Reset all stats" arrow>
           <IconButton
             size="small"
-            onClick={onReset}
+            onClick={handleResetClick}
             sx={{
               color: "rgba(248, 249, 250, 0.4)",
               "&:hover": {
@@ -224,6 +239,59 @@ export function VoteStreakDisplay({
           </IconButton>
         </Tooltip>
       )}
+
+      {/* Reset Confirmation Dialog */}
+      <Dialog
+        open={resetDialogOpen}
+        onClose={handleResetCancel}
+        PaperProps={{
+          sx: {
+            background: "rgba(12, 18, 32, 0.95)",
+            backdropFilter: "blur(20px)",
+            border: "1px solid rgba(255,255,255,0.1)",
+            borderRadius: 2,
+          },
+        }}
+      >
+        <DialogTitle sx={{ color: "var(--text)", fontWeight: 700 }}>
+          Reset All Statistics?
+        </DialogTitle>
+        <DialogContent>
+          <Typography sx={{ color: "rgba(248, 249, 250, 0.85)", mt: 1 }}>
+            This will permanently delete all your vote statistics including your current streak, longest streak, and total votes. This action cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ p: 2, gap: 1 }}>
+          <Button
+            onClick={handleResetCancel}
+            sx={{
+              color: "var(--text)",
+              borderColor: "rgba(255,255,255,0.2)",
+              "&:hover": {
+                background: "rgba(255,255,255,0.05)",
+              },
+            }}
+            variant="outlined"
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleResetConfirm}
+            sx={{
+              background: "rgba(239, 71, 111, 0.2)",
+              color: "rgba(239, 71, 111, 1)",
+              borderColor: "rgba(239, 71, 111, 0.3)",
+              fontWeight: 700,
+              "&:hover": {
+                background: "rgba(239, 71, 111, 0.35)",
+              },
+            }}
+            variant="outlined"
+          >
+            Reset Statistics
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
