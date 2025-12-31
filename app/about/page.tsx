@@ -9,7 +9,7 @@ import ListItem from "@mui/material/ListItem";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import { COLORS, GRADIENTS } from "@/lib/theme";
+import { COLORS } from "@/lib/theme";
 
 export const metadata: Metadata = {
   title: "About | Which One Vapes",
