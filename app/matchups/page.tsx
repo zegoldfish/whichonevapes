@@ -113,7 +113,7 @@ export default function MatchupsPage() {
       ) : (
         <>
           {/* Desktop Table */}
-          <Box sx={{ display: { xs: "none", md: "block" } }}>
+          <Box sx={{ display: { xs: "none", sm: "block" } }}>
             <MatchupsDesktopTable
               matchups={paginatedMatchups}
               formatDate={formatDate}
@@ -122,7 +122,7 @@ export default function MatchupsPage() {
           </Box>
 
           {/* Mobile Cards */}
-          <Box sx={{ display: { xs: "block", md: "none" } }}>
+          <Box sx={{ display: { xs: "block", sm: "none" } }}>
             <MatchupsMobileCards
               matchups={paginatedMatchups}
               formatDate={formatDate}
