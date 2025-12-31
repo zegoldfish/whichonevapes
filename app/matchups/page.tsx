@@ -7,6 +7,9 @@ import Typography from "@mui/material/Typography";
 import CircularProgress from "@mui/material/CircularProgress";
 import Alert from "@mui/material/Alert";
 import Button from "@mui/material/Button";
+import TextField from "@mui/material/TextField";
+import InputAdornment from "@mui/material/InputAdornment";
+import SearchIcon from "@mui/icons-material/Search";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import { type MatchupVote } from "@/types/matchup";
@@ -22,6 +25,7 @@ export default function MatchupsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     const fetchMatchups = async () => {
@@ -57,10 +61,25 @@ export default function MatchupsPage() {
     return `${sign}${change.toFixed(1)}`;
   };
 
+  // Filter matchups based on search query
+  const filteredMatchups = matchups.filter((matchup) => {
+    if (!searchQuery) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      matchup.celebAName.toLowerCase().includes(query) ||
+      matchup.celebBName.toLowerCase().includes(query)
+    );
+  });
+
   const startIdx = page * PAGE_SIZE;
   const endIdx = startIdx + PAGE_SIZE;
-  const paginatedMatchups = matchups.slice(startIdx, endIdx);
-  const hasNextPage = endIdx < matchups.length;
+  const paginatedMatchups = filteredMatchups.slice(startIdx, endIdx);
+  const hasNextPage = endIdx < filteredMatchups.length;
+
+  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(event.target.value);
+    setPage(0); // Reset to first page when searching
+  };
 
   if (loading) {
     return (
@@ -98,7 +117,52 @@ export default function MatchupsPage() {
         </Box>
       </Box>
 
-      {matchups.length === 0 ? (
+      {/* Search Bar */}
+      <Box sx={{ mb: 3 }}>
+        <TextField
+          fullWidth
+          variant="outlined"
+          placeholder="Search by celebrity name..."
+          value={searchQuery}
+          onChange={handleSearchChange}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon sx={{ color: COLORS.text?.muted || "#999" }} />
+              </InputAdornment>
+            ),
+          }}
+          sx={{
+            "& .MuiOutlinedInput-root": {
+              backgroundColor: GRADIENTS.card,
+              borderRadius: 2,
+              "& fieldset": {
+                borderColor: COLORS.border?.light || "rgba(255,255,255,0.1)",
+              },
+              "&:hover fieldset": {
+                borderColor: COLORS.primary?.main || "#1DB6A8",
+              },
+              "&.Mui-focused fieldset": {
+                borderColor: COLORS.primary?.main || "#1DB6A8",
+              },
+            },
+            "& .MuiOutlinedInput-input": {
+              color: "white",
+              "&::placeholder": {
+                color: COLORS.text?.muted || "#999",
+                opacity: 0.7,
+              },
+            },
+          }}
+        />
+        {searchQuery && (
+          <Typography variant="caption" sx={{ color: COLORS.text?.muted || "#999", mt: 1, display: "block" }}>
+            Found {filteredMatchups.length} matchup{filteredMatchups.length !== 1 ? "s" : ""}
+          </Typography>
+        )}
+      </Box>
+
+      {filteredMatchups.length === 0 ? (
         <Box
           sx={{
             p: 3,
@@ -168,7 +232,7 @@ export default function MatchupsPage() {
             </Button>
 
             <Typography sx={{ color: COLORS.text?.muted || "#999", fontSize: "0.9rem" }}>
-              Page {page + 1} of {Math.ceil(matchups.length / PAGE_SIZE)}
+              Page {page + 1} of {Math.ceil(filteredMatchups.length / PAGE_SIZE)}
             </Typography>
 
             <Button
