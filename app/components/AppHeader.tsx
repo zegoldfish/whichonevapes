@@ -31,6 +31,7 @@ export function AppHeader() {
     { href: "/", label: "Play" },
     { href: "/search", label: "Search" },
     { href: "/rankings", label: "Rankings" },
+    { href: "/matchups", label: "Matchups" },
     { href: "/about", label: "About" },
   ];
 

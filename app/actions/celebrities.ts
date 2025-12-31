@@ -41,6 +41,11 @@ function createMatchupKey(celebAId: string, celebBId: string): string {
 
 const DEFAULT_STATUS: Celebrity["status"] = "active";
 
+// Cache for recent matchups
+let cachedMatchups: MatchupVote[] | null = null;
+let matchupsCacheTime: number | null = null;
+const MATCHUPS_CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minutes
+
 function normalizeCelebrityStatus(celeb: Celebrity): Celebrity {
   return { ...celeb, status: celeb.status ?? DEFAULT_STATUS };
 }
@@ -1237,4 +1242,45 @@ export async function getSkipStatsByCelebrity(params?: {
     items: paginatedStats,
     totalCount: allStats.length,
   };
+}
+
+// Fetch recent matchup votes without hard limit
+export async function getRecentMatchups(): Promise<MatchupVote[]> {
+  // Check if cache is valid
+  const now = Date.now();
+  if (cachedMatchups && matchupsCacheTime && now - matchupsCacheTime < MATCHUPS_CACHE_DURATION_MS) {
+    return cachedMatchups;
+  }
+
+  // Scan matchups table and paginate through all results
+  const allItems: Matchup[] = [];
+  let lastEvaluatedKey: Record<string, unknown> | undefined;
+
+  do {
+    const result = await ddb.send(
+      new ScanCommand({
+        TableName: MATCHUPS_TABLE_NAME,
+        FilterExpression: "eventType = :vote",
+        ExpressionAttributeValues: {
+          ":vote": "vote",
+        },
+        ExclusiveStartKey: lastEvaluatedKey,
+      })
+    );
+
+    if (result.Items && result.Items.length > 0) {
+      allItems.push(...(result.Items as Matchup[]));
+    }
+
+    lastEvaluatedKey = result.LastEvaluatedKey as Record<string, unknown> | undefined;
+  } while (lastEvaluatedKey);
+
+  const matchups = allItems
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()) as MatchupVote[];
+
+  // Update cache
+  cachedMatchups = matchups;
+  matchupsCacheTime = now;
+
+  return matchups;
 }
