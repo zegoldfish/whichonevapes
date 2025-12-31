@@ -141,6 +141,8 @@ export function useVoteStreak(): UseVoteStreakReturn {
   const resetStats = useCallback(() => {
     setStats(getDefaultStats());
     localStorage.removeItem(STORAGE_KEY);
+    setShowStreakFeedback(false);
+    setStreakMilestone(null);
   }, []);
 
   const dismissFeedback = useCallback(() => {
