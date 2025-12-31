@@ -14,6 +14,7 @@ interface UseVoteStreakReturn {
   resetStats: () => void;
   showStreakFeedback: boolean;
   streakMilestone: number | null;
+  dismissFeedback: () => void;
 }
 
 const STORAGE_KEY = "voteStats";
@@ -116,12 +117,10 @@ export function useVoteStreak(): UseVoteStreakReturn {
       if (milestone) {
         setStreakMilestone(milestone);
         setShowStreakFeedback(true);
-        setTimeout(() => setShowStreakFeedback(false), 4000);
       } else if (newStreak > prev.currentStreak && newStreak % 5 === 0) {
         // Show feedback for streak multiples of 5
         setStreakMilestone(newStreak);
         setShowStreakFeedback(true);
-        setTimeout(() => setShowStreakFeedback(false), 3000);
       }
       
       return {
@@ -139,11 +138,16 @@ export function useVoteStreak(): UseVoteStreakReturn {
     localStorage.removeItem(STORAGE_KEY);
   }, []);
 
+  const dismissFeedback = useCallback(() => {
+    setShowStreakFeedback(false);
+  }, []);
+
   return {
     stats,
     recordVote,
     resetStats,
     showStreakFeedback,
     streakMilestone,
+    dismissFeedback,
   };
 }

@@ -45,7 +45,7 @@ function HomeContent() {
   const indicatorDelayDuration = 150; // milliseconds before showing indicator
 
   // Vote tracking hook
-  const { stats, recordVote, resetStats, showStreakFeedback, streakMilestone } = useVoteStreak();
+  const { stats, recordVote, resetStats, showStreakFeedback, streakMilestone, dismissFeedback } = useVoteStreak();
 
   // Keep ref in sync with state
   useEffect(() => {
@@ -519,7 +519,7 @@ function HomeContent() {
         <StreakMilestoneAlert
           open={showStreakFeedback}
           milestone={streakMilestone}
-          onClose={() => {}}
+          onClose={dismissFeedback}
           isVoteMilestone={
             streakMilestone !== null &&
             [5, 10, 25, 50, 100, 250, 500, 1000].includes(streakMilestone)
