@@ -22,7 +22,7 @@ import RankingsPagination from "@/app/components/RankingsPagination";
 import ClimbersSection from "@/app/components/ClimbersSection";
 import { getRankedCelebritiesPage, getTopClimbers } from "@/app/actions/celebrities";
 import { getVaperLikelihood } from "@/lib/vaper";
-import { eloPercentileFromRank, matchesPerDay, wilsonLowerBound, daysSince } from "@/lib/metrics";
+import { eloPercentileFromRank, matchesPerDay, wilsonLowerBound, daysSince, hoursSince } from "@/lib/metrics";
 import { COLORS, GRADIENTS } from "@/lib/theme";
 import { type Celebrity } from "@/types/celebrity";
 import { event as gaEvent } from "@/lib/gtag";
@@ -77,6 +77,7 @@ function RankingCard({ celeb, rank, totalCount }: { celeb: Celebrity; rank: numb
     return `${(lb * 100).toFixed(1)}% vaper confidence`;
   }, [celeb.confirmedVaperYesVotes, celeb.confirmedVaperNoVotes]);
 
+  const lastActiveHours = hoursSince(celeb.updatedAt);
   const lastActiveDays = daysSince(celeb.updatedAt);
   const matchRate = matchesPerDay(celeb.matches ?? 0, celeb.createdAt);
   const eloPct = useMemo(() => eloPercentileFromRank(rank, totalCount), [rank, totalCount]);
@@ -173,8 +174,12 @@ function RankingCard({ celeb, rank, totalCount }: { celeb: Celebrity; rank: numb
         <StatPill label="Win rate" value={winRate ?? "N/A"} />
         {typeof eloPct === "number" && <StatPill label="Elo pct." value={`${eloPct.toFixed(1)}%`} />}
         {winConfidence && <StatPill label="Win conf." value={winConfidence} />}
-        {typeof lastActiveDays === "number" && (
-          <StatPill label="Last active" value={`${lastActiveDays}d ago`} />
+        {typeof lastActiveHours === "number" && typeof lastActiveDays === "number" && (
+          lastActiveDays < 1 ? (
+            <StatPill label="Last active" value={`${lastActiveHours}h ago`} />
+          ) : (
+            <StatPill label="Last active" value={`${lastActiveDays}d ago`} />
+          )
         )}
         {typeof matchRate === "number" && (
           <StatPill label="Match rate" value={`${matchRate.toFixed(2)}/day`} />
