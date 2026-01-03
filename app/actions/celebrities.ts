@@ -1292,12 +1292,10 @@ export async function postMatchupPoll(matchup: MatchupVote): Promise<{ success: 
     return { success: false, error: "Unauthorized" };
   }
 
-  // Check if user is an approved admin
-  const githubUsername = (session.user as { login?: string; name?: string; email?: string }).login || 
-                         (session.user as { name?: string }).name || 
-                         (session.user as { email?: string }).email;
-  
-  if (!githubUsername || !isApprovedAdmin(githubUsername)) {
+  // Check if user is an approved admin using their email address
+  const userEmail = (session.user as { email?: string | null }).email || undefined;
+
+  if (!userEmail || !isApprovedAdmin(userEmail)) {
     return { success: false, error: "Not an approved admin" };
   }
 
