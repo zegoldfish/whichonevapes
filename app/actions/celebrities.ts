@@ -1284,3 +1284,49 @@ export async function getRecentMatchups(): Promise<MatchupVote[]> {
 
   return matchups;
 }
+
+export async function postMatchupPoll(matchup: MatchupVote): Promise<{ success: boolean; tweetId?: string; error?: string }> {
+  // Verify user is authenticated and is an admin
+  const session = await auth();
+  if (!session?.user) {
+    return { success: false, error: "Unauthorized" };
+  }
+
+  // Check if user is an approved admin
+  const githubUsername = (session.user as { login?: string; name?: string; email?: string }).login || 
+                         (session.user as { name?: string }).name || 
+                         (session.user as { email?: string }).email;
+  
+  if (!githubUsername || !isApprovedAdmin(githubUsername)) {
+    return { success: false, error: "Not an approved admin" };
+  }
+
+  try {
+    const { twitterClient } = await import("@/lib/twitter");
+    
+    const isWinnerA = matchup.winner === "A";
+    const winner = isWinnerA ? matchup.celebAName : matchup.celebBName;
+    const loser = isWinnerA ? matchup.celebBName : matchup.celebAName;
+
+    const text = `Which One Vapes? 🤔`;
+
+    // Create a poll (Twitter API v2)
+    const response = await twitterClient.v2.tweet(text, {
+      poll: {
+        options: [winner, loser],
+        duration_minutes: 24 * 60,
+      },
+    });
+
+    return {
+      success: true,
+      tweetId: response.data.id,
+    };
+  } catch (error) {
+    console.error("Failed to post matchup poll:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to post poll",
+    };
+  }
+}
