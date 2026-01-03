@@ -23,7 +23,7 @@ export default function AdminMatchupsTable({ matchups, onTweet }: AdminMatchupsT
   };
   return (
     <Box>
-      <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+      <Typography variant="h6" sx={{ mb: 2, fontWeight: 600, color: COLORS.text?.primary || "rgba(248, 249, 250, 0.95)" }}>
         Recent Matchups
       </Typography>
       <Box
@@ -44,16 +44,16 @@ export default function AdminMatchupsTable({ matchups, onTweet }: AdminMatchupsT
             backgroundColor: "rgba(0,0,0,0.2)",
           }}
         >
-          <Typography variant="caption" sx={{ fontWeight: 600, textTransform: "uppercase", fontSize: "0.75rem" }}>
+          <Typography variant="caption" sx={{ fontWeight: 600, textTransform: "uppercase", fontSize: "0.75rem", color: COLORS.text?.muted || "#999" }}>
             Time
           </Typography>
-          <Typography variant="caption" sx={{ fontWeight: 600, textTransform: "uppercase", fontSize: "0.75rem" }}>
+          <Typography variant="caption" sx={{ fontWeight: 600, textTransform: "uppercase", fontSize: "0.75rem", color: COLORS.text?.muted || "#999" }}>
             Winner
           </Typography>
-          <Typography variant="caption" sx={{ fontWeight: 600, textTransform: "uppercase", fontSize: "0.75rem" }}>
+          <Typography variant="caption" sx={{ fontWeight: 600, textTransform: "uppercase", fontSize: "0.75rem", color: COLORS.text?.muted || "#999" }}>
             Loser
           </Typography>
-          <Typography variant="caption" sx={{ fontWeight: 600, textTransform: "uppercase", fontSize: "0.75rem" }}>
+          <Typography variant="caption" sx={{ fontWeight: 600, textTransform: "uppercase", fontSize: "0.75rem", color: COLORS.text?.muted || "#999" }}>
             Actions
           </Typography>
         </Box>
