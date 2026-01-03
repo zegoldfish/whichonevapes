@@ -1306,12 +1306,22 @@ export async function postMatchupPoll(matchup: MatchupVote): Promise<{ success: 
     const winner = isWinnerA ? matchup.celebAName : matchup.celebBName;
     const loser = isWinnerA ? matchup.celebBName : matchup.celebAName;
 
+    const MAX_POLL_OPTION_LENGTH = 25;
+    const truncatedWinner =
+      typeof winner === "string" && winner.length > MAX_POLL_OPTION_LENGTH
+        ? winner.slice(0, MAX_POLL_OPTION_LENGTH)
+        : winner;
+    const truncatedLoser =
+      typeof loser === "string" && loser.length > MAX_POLL_OPTION_LENGTH
+        ? loser.slice(0, MAX_POLL_OPTION_LENGTH)
+        : loser;
+
     const text = `Which One Vapes? 🤔`;
 
     // Create a poll (Twitter API v2)
     const response = await twitterClient.v2.tweet(text, {
       poll: {
-        options: [winner, loser],
+        options: [truncatedWinner, truncatedLoser],
         duration_minutes: 24 * 60,
       },
     });
