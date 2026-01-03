@@ -1288,17 +1288,14 @@ export async function getRecentMatchups(): Promise<MatchupVote[]> {
 export async function postMatchupPoll(matchup: MatchupVote): Promise<{ success: boolean; tweetId?: string; error?: string }> {
   // Verify user is authenticated and is an admin
   const session = await auth();
-  if (!session?.user) {
-    return { success: false, error: "Unauthorized" };
+  if (!session || !session.user?.email) {
+    throw new Error("Unauthorized: You must be logged in as an admin");
   }
 
-  // Check if user is an approved admin
-  const githubUsername = (session.user as { login?: string; name?: string; email?: string }).login || 
-                         (session.user as { name?: string }).name || 
-                         (session.user as { email?: string }).email;
-  
-  if (!githubUsername || !(await isApprovedAdmin(githubUsername))) {
-    return { success: false, error: "Not an approved admin" };
+  // Verify user is an approved admin
+  const isAdmin = await isApprovedAdmin(session.user.email);
+  if (!isAdmin) {
+    throw new Error("Forbidden: You are not authorized to perform this action");
   }
 
   try {
