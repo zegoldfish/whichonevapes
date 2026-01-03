@@ -1297,7 +1297,7 @@ export async function postMatchupPoll(matchup: MatchupVote): Promise<{ success: 
                          (session.user as { name?: string }).name || 
                          (session.user as { email?: string }).email;
   
-  if (!githubUsername || !isApprovedAdmin(githubUsername)) {
+  if (!githubUsername || !(await isApprovedAdmin(githubUsername))) {
     return { success: false, error: "Not an approved admin" };
   }
 
