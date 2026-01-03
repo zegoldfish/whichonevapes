@@ -18,8 +18,10 @@ import { GRADIENTS, COLORS } from "@/lib/theme";
 import AdminCelebritiesTable from "@/app/admin/components/AdminCelebritiesTable";
 import SkipEventsTable from "@/app/admin/components/SkipEventsTable";
 import CelebritySkipStatsTable from "@/app/admin/components/CelebritySkipStatsTable";
-import { getUnapprovedCelebritiesPage } from "@/app/actions/celebrities";
+import AdminMatchupsTable from "@/app/admin/components/AdminMatchupsTable";
+import { getUnapprovedCelebritiesPage, getRecentMatchups, postMatchupPoll } from "@/app/actions/celebrities";
 import { Celebrity } from "@/types/celebrity";
+import { MatchupVote } from "@/types/matchup";
 
 export const dynamic = "force-dynamic";
 
@@ -27,7 +29,9 @@ export default function AdminPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [celebrities, setCelebrities] = useState<Pick<Celebrity, "id" | "name" | "slug" | "wikipediaPageId" | "createdAt" | "updatedAt">[]>([]);
+  const [matchups, setMatchups] = useState<MatchupVote[]>([]);
   const [loadingCelebs, setLoadingCelebs] = useState(true);
+  const [loadingMatchups, setLoadingMatchups] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const loadCelebrities = useCallback(async () => {
@@ -44,11 +48,37 @@ export default function AdminPage() {
     }
   }, []);
 
+  const loadMatchups = useCallback(async () => {
+    setLoadingMatchups(true);
+    try {
+      const recentMatchups = await getRecentMatchups();
+      setMatchups(recentMatchups.slice(0, 20)); // Show last 20 matchups
+    } catch (error) {
+      console.error("Failed to load matchups:", error);
+    } finally {
+      setLoadingMatchups(false);
+    }
+  }, []);
+
+  const handleTweetMatchup = async (matchup: MatchupVote) => {
+    try {
+      const result = await postMatchupPoll(matchup);
+      if (result.success) {
+        alert(`Poll posted! Tweet ID: ${result.tweetId}`);
+      } else {
+        alert(`Failed to post poll: ${result.error}`);
+      }
+    } catch (error) {
+      alert(`Error: ${error instanceof Error ? error.message : "Unknown error"}`);
+    }
+  };
+
   useEffect(() => {
     if (status === "authenticated") {
       loadCelebrities();
+      loadMatchups();
     }
-  }, [status, loadCelebrities]);
+  }, [status, loadCelebrities, loadMatchups]);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -146,6 +176,27 @@ export default function AdminPage() {
                 <AdminCelebritiesTable 
                   celebrities={celebrities}
                   onUpdate={loadCelebrities}
+                />
+              )}
+            </Box>
+
+            <Box
+              sx={{
+                p: 3,
+                borderRadius: 2,
+                background: "rgba(255,255,255,0.03)",
+                border: "1px solid rgba(255,255,255,0.06)",
+                mb: 3,
+              }}
+            >
+              {loadingMatchups ? (
+                <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
+                  <CircularProgress />
+                </Box>
+              ) : (
+                <AdminMatchupsTable 
+                  matchups={matchups}
+                  onTweet={handleTweetMatchup}
                 />
               )}
             </Box>

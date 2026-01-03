@@ -138,8 +138,10 @@ export default function CelebritySkipStatsTable() {
                         if (!result.success) {
                           throw new Error(result.message);
                         }
-                        setStats((prev) => prev.filter((s) => s.celebrityId !== stat.celebrityId));
-                        setTotalCount((prev) => Math.max(0, prev - 1));
+                        // Reload stats from backend after retirement
+                        const refreshed = await getSkipStatsByCelebrity({ pageSize, pageNumber: page });
+                        setStats(refreshed.items);
+                        setTotalCount(refreshed.totalCount);
                       } catch (err) {
                         console.error("Failed to retire celebrity:", err);
                         setError(err instanceof Error ? err.message : "Failed to retire celebrity");

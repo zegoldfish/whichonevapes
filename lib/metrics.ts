@@ -9,6 +9,15 @@ export function wilsonLowerBound(positive: number, total: number, z: number = 1.
   return Math.max(0, Math.min(1, lower));
 }
 
+export function hoursSince(dateIso?: string): number | null {
+  if (!dateIso) return null;
+  const then = new Date(dateIso).getTime();
+  if (Number.isNaN(then)) return null;
+  const now = Date.now();
+  const msPerHour = 60 * 60 * 1000;
+  return Math.max(0, Math.floor((now - then) / msPerHour));
+}
+
 export function daysSince(dateIso?: string): number | null {
   if (!dateIso) return null;
   const then = new Date(dateIso).getTime();
