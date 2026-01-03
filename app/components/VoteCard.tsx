@@ -12,6 +12,7 @@ import {
   IconButton,
   Tooltip,
   CircularProgress,
+  Skeleton,
 } from "@mui/material";
 import ThumbUpAltRoundedIcon from "@mui/icons-material/ThumbUpAltRounded";
 import ThumbDownAltRoundedIcon from "@mui/icons-material/ThumbDownAltRounded";
@@ -120,7 +121,24 @@ export function VoteCard({
           transition: "transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease, opacity 0.2s ease",
         }}
       >
-        <Box sx={{ position: "relative", minHeight: { xs: 260, sm: 320 }, background: GRADIENTS.photoSection }}>
+        <Box
+          sx={{
+            position: "relative",
+            minHeight: { xs: 260, sm: 320 },
+            aspectRatio: { xs: "3 / 4", sm: "4 / 5" },
+            background: GRADIENTS.photoSection,
+          }}
+        >
+          {(loadingImg || !currentImgSrc) && (
+            <Skeleton
+              variant="rectangular"
+              sx={{
+                position: "absolute",
+                inset: 0,
+                bgcolor: "rgba(255,255,255,0.04)",
+              }}
+            />
+          )}
           {currentImgSrc && (
             <Image
               src={currentImgSrc}
