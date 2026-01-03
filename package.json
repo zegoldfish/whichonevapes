@@ -23,6 +23,7 @@
     "next-auth": "^4.24.9",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "twitter-api-v2": "^1.28.0",
     "zod": "^4.2.1"
   },
   "devDependencies": {
