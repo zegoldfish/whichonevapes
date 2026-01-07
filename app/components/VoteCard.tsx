@@ -153,7 +153,6 @@ export function VoteCard({
                 objectFit: "contain",
                 objectPosition: "center top",
                 minHeight: 260,
-                maxHeight: 420,
                 filter: "saturate(1.08)",
               }}
               priority={position === "left"}
